@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Register - ExamBit{% endblock %}
+{% block content %}
+<h1>Register</h1>
+<form method="post">
+  <p><label>Name<br><input type="text" name="name" value="{{ name }}" required></label></p>
+  <p><label>Email<br><input type="email" name="email" value="{{ email }}" required></label></p>
+  <p><label>Password (min 8 characters)<br><input type="password" name="password" required></label></p>
+  <p><label>Confirm password<br><input type="password" name="confirm" required></label></p>
+  <p><label>I am a<br>
+    <select name="role" required>
+      <option value="">Choose...</option>
+      <option value="student" {% if role == 'student' %}selected{% endif %}>Student</option>
+      <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>Teacher</option>
+    </select></label></p>
+  <p><button type="submit">Create account</button></p>
+</form>
+<p>Already registered? <a href="{{ url_for('auth.login') }}">Login</a></p>
+{% endblock %}

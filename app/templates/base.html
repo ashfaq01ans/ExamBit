@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ExamBit{% endblock %}</title>
+</head>
+<body>
+  <nav>
+    <a href="{{ url_for('index') }}">ExamBit</a>
+    {% if current_user.is_authenticated %}
+      <span>{{ current_user.name }} ({{ current_user.role }})</span>
+      <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
+        <button type="submit">Logout</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}">Login</a>
+      <a href="{{ url_for('auth.register') }}">Register</a>
+    {% endif %}
+  </nav>
+  <hr>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <p class="flash {{ category }}">{{ message }}</p>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</body>
+</html>
