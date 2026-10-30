@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - ExamBit{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('teacher.dashboard') }}">&larr; Back to dashboard</a></p>
+<h1>{{ exam.title }}</h1>
+
+<p>
+  Status: <strong>{{ 'Published' if exam.is_published else 'Draft' }}</strong><br>
+  Window (IST): {{ exam.start_time|localdt }} to {{ exam.end_time|localdt }}<br>
+  Duration: {{ exam.duration_minutes }} minutes<br>
+  Total marks: {{ exam.questions|sum(attribute='marks') }}
+</p>
+{% if exam.instructions %}
+<p><strong>Instructions:</strong><br>{{ exam.instructions }}</p>
+{% endif %}
+
+{% if locked %}
+  <p>This exam has attempts, so it can no longer be edited or deleted.</p>
+{% else %}
+  <p>
+    <a href="{{ url_for('teacher.exam_edit', exam_id=exam.id) }}">Edit details</a>
+    {% if exam.is_published %}
+      <form method="post" action="{{ url_for('teacher.exam_unpublish', exam_id=exam.id) }}" style="display:inline">
+        <button type="submit">Unpublish</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('teacher.exam_publish', exam_id=exam.id) }}" style="display:inline">
+        <button type="submit">Publish</button>
+      </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('teacher.exam_delete', exam_id=exam.id) }}" style="display:inline"
+          onsubmit="return confirm('Delete this exam and all its questions?');">
+      <button type="submit">Delete exam</button>
+    </form>
+  </p>
+{% endif %}
+
+<h2>Questions ({{ exam.questions|length }})</h2>
+{% if not locked %}
+  <p><a href="{{ url_for('teacher.question_new', exam_id=exam.id) }}">+ Add question</a></p>
+{% endif %}
+
+{% for question in exam.questions|sort(attribute='id') %}
+  <div>
+    <p>
+      <strong>Q{{ loop.index }}.</strong> {{ question.text }}
+      <em>({{ types[question.qtype] }}, {{ question.marks }} mark{{ '' if question.marks == 1 else 's' }})</em>
+    </p>
+    {% if question.options %}
+      <ul>
+        {% for option in question.options|sort(attribute='id') %}
+          <li>{{ option.text }}{% if option.is_correct %} <strong>(correct)</strong>{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p><em>Graded manually after the exam.</em></p>
+    {% endif %}
+    {% if not locked %}
+      <form method="post"
+            action="{{ url_for('teacher.question_delete', exam_id=exam.id, question_id=question.id) }}"
+            onsubmit="return confirm('Delete this question?');">
+        <button type="submit">Delete question</button>
+      </form>
+    {% endif %}
+    <hr>
+  </div>
+{% else %}
+  <p>No questions yet.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit exam' if exam else 'Create exam' }} - ExamBit{% endblock %}
+{% block content %}
+<h1>{{ 'Edit exam' if exam else 'Create exam' }}</h1>
+<p>Times are in India Standard Time (IST).</p>
+<form method="post">
+  <p>
+    <label for="title">Title</label><br>
+    <input type="text" id="title" name="title" value="{{ values.title }}" size="50" required>
+  </p>
+  <p>
+    <label for="instructions">Instructions for students</label><br>
+    <textarea id="instructions" name="instructions" rows="5" cols="60">{{ values.instructions }}</textarea>
+  </p>
+  <p>
+    <label for="duration_minutes">Duration (minutes)</label><br>
+    <input type="number" id="duration_minutes" name="duration_minutes" min="1" max="300" value="{{ values.duration_minutes }}" required>
+  </p>
+  <p>
+    <label for="start_time">Window opens</label><br>
+    <input type="datetime-local" id="start_time" name="start_time" value="{{ values.start_time }}" required>
+  </p>
+  <p>
+    <label for="end_time">Window closes</label><br>
+    <input type="datetime-local" id="end_time" name="end_time" value="{{ values.end_time }}" required>
+  </p>
+  <p><button type="submit">{{ 'Save changes' if exam else 'Create exam' }}</button></p>
+</form>
+<p>
+  <a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) if exam else url_for('teacher.dashboard') }}">Cancel</a>
+</p>
+{% endblock %}

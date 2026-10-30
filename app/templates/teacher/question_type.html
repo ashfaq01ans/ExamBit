@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Add question - ExamBit{% endblock %}
+{% block content %}
+<h1>Add question</h1>
+<p>Exam: {{ exam.title }}. Choose a question type:</p>
+<ul>
+  {% for key, label in types.items() %}
+    <li><a href="{{ url_for('teacher.question_new', exam_id=exam.id, type=key) }}">{{ label }}</a></li>
+  {% endfor %}
+</ul>
+<p><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Cancel</a></p>
+{% endblock %}

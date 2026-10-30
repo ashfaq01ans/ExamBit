@@ -2,5 +2,26 @@
 {% block title %}Teacher Dashboard - ExamBit{% endblock %}
 {% block content %}
 <h1>Teacher Dashboard</h1>
-<p>Welcome, {{ current_user.name }}. Exam creation comes in the next step.</p>
+<p>Welcome, {{ current_user.name }}.</p>
+<p><a href="{{ url_for('teacher.exam_new') }}">+ Create new exam</a></p>
+
+{% if exams %}
+<table border="1" cellpadding="6">
+  <tr>
+    <th>Title</th><th>Window (IST)</th><th>Duration</th><th>Questions</th><th>Status</th><th></th>
+  </tr>
+  {% for exam in exams %}
+  <tr>
+    <td>{{ exam.title }}</td>
+    <td>{{ exam.start_time|localdt }}<br>to {{ exam.end_time|localdt }}</td>
+    <td>{{ exam.duration_minutes }} min</td>
+    <td>{{ exam.questions|length }}</td>
+    <td>{{ 'Published' if exam.is_published else 'Draft' }}</td>
+    <td><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No exams yet. Create your first one.</p>
+{% endif %}
 {% endblock %}

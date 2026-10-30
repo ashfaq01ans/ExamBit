@@ -21,6 +21,10 @@ def create_app():
     login_manager.init_app(app)
 
     from app import models  # noqa: F401  (registers tables with SQLAlchemy)
+    from app.timeutil import local_display, local_input
+
+    app.add_template_filter(local_display, "localdt")
+    app.add_template_filter(local_input, "localinput")
 
     from app.auth.routes import bp as auth_bp
     from app.teacher.routes import bp as teacher_bp
