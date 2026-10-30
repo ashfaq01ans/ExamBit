@@ -1,0 +1,36 @@
+/* Password field with show/hide icon. Full page styling comes later. */
+.pw-field {
+  position: relative;
+  display: inline-block;
+}
+
+.pw-field input {
+  padding-right: 2.4rem;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+  color: inherit;
+}
+
+.pw-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pw-toggle .eye-off { display: none; }
+.pw-toggle.is-visible .eye { display: none; }
+.pw-toggle.is-visible .eye-off { display: inline; }
