@@ -5,11 +5,16 @@ from flask import (
     Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for,
 )
 from flask_login import current_user
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.decorators import role_required
-from app.models import Answer, Attempt, Exam, Question
+from app.models import Answer, Attempt, Exam, Question, Snapshot, Violation
+from app.proctoring import (
+    MAX_SNAPSHOT_BYTES, MAX_SNAPSHOTS_PER_ATTEMPT, MAX_VIOLATIONS,
+    SNAPSHOT_INTERVAL_SECONDS, VIOLATION_LABELS,
+)
 
 bp = Blueprint("student", __name__, url_prefix="/student")
 
@@ -78,6 +83,12 @@ def time_up_redirect(attempt, deadline):
     return redirect(url_for("student.result", attempt_id=attempt.id))
 
 
+def count_violations(attempt):
+    return db.session.scalar(
+        db.select(func.count(Violation.id)).where(Violation.attempt_id == attempt.id)
+    )
+
+
 def ordered_questions(attempt):
     """Objective questions first, short-answer questions last. Each group is shuffled
     on its own. Seeding with the attempt id keeps the order stable on refresh without
@@ -121,6 +132,43 @@ def save_answer(attempt, question, option_ids, text, marked):
         answer.text_answer = None
 
     answer.marked_for_review = bool(marked)
+
+
+def build_payload(attempt):
+    deadline = deadline_for(attempt)
+    now = now_utc()
+    return {
+        "attemptId": attempt.id,
+        "remaining": remaining_seconds(deadline, now),
+        "violationCount": count_violations(attempt),
+        "maxViolations": MAX_VIOLATIONS,
+        "urls": {
+            "answer": url_for("student.answer_api", attempt_id=attempt.id),
+            "submit": url_for("student.submit", attempt_id=attempt.id),
+            "result": url_for("student.result", attempt_id=attempt.id),
+            "violation": url_for("student.violation_api", attempt_id=attempt.id),
+            "snapshot": url_for("student.snapshot_api", attempt_id=attempt.id),
+        },
+        # correct answers are never sent to the browser
+        "questions": [
+            {
+                "id": q.id,
+                "text": q.text,
+                "type": q.qtype,
+                "marks": q.marks,
+                "options": [{"id": o.id, "text": o.text} for o in ordered_options(attempt, q)],
+            }
+            for q in ordered_questions(attempt)
+        ],
+        "answers": {
+            str(a.question_id): {
+                "options": a.selected_option_ids or [],
+                "text": a.text_answer or "",
+                "marked": a.marked_for_review,
+            }
+            for a in attempt.answers
+        },
+    }
 
 
 # ---------- dashboard and exam info ----------
@@ -174,82 +222,70 @@ def exam_detail(exam_id):
     return render_template("student/exam_detail.html", exam=exam, attempt=attempt, state=state)
 
 
-@bp.route("/exams/<int:exam_id>/start", methods=["POST"])
+# ---------- system check, then the exam (one page) ----------
+
+@bp.route("/exams/<int:exam_id>/take")
 @role_required("student")
-def exam_start(exam_id):
+def exam_take(exam_id):
+    """The exam page. It starts with a system check. No questions and no timer
+    start until the student passes it and clicks Begin."""
     exam = get_published_exam(exam_id)
-    if find_attempt(exam.id):
-        return redirect(url_for("student.exam_detail", exam_id=exam.id))
+    attempt = find_attempt(exam.id)
+    if attempt:
+        expire_if_needed(attempt)
+        if attempt.status != "in_progress":
+            return redirect(url_for("student.result", attempt_id=attempt.id))
+    else:
+        now = now_utc()
+        if not (exam.start_time <= now < exam.end_time):
+            flash("This exam is not open right now.", "error")
+            return redirect(url_for("student.exam_detail", exam_id=exam.id))
 
-    now = now_utc()
-    if not (exam.start_time <= now < exam.end_time):
-        flash("This exam is not open right now.", "error")
-        return redirect(url_for("student.exam_detail", exam_id=exam.id))
-    if not exam.questions:
-        flash("This exam has no questions yet.", "error")
-        return redirect(url_for("student.exam_detail", exam_id=exam.id))
-    if request.form.get("consent") != "yes":
-        flash("You must accept the exam rules to start.", "error")
-        return redirect(url_for("student.exam_detail", exam_id=exam.id))
-
-    attempt = Attempt(exam_id=exam.id, student_id=current_user.id, started_at=now)
-    db.session.add(attempt)
-    try:
-        db.session.commit()
-    except IntegrityError:  # double click: the attempt already exists
-        db.session.rollback()
-        return redirect(url_for("student.exam_detail", exam_id=exam.id))
-
-    return redirect(url_for("student.exam_run", attempt_id=attempt.id))
-
-
-# ---------- taking the exam ----------
-
-@bp.route("/attempts/<int:attempt_id>/exam")
-@role_required("student")
-def exam_run(attempt_id):
-    attempt = get_attempt(attempt_id)
-    if attempt.status != "in_progress":
-        return redirect(url_for("student.result", attempt_id=attempt.id))
-
-    deadline = deadline_for(attempt)
-    now = now_utc()
-    if now > deadline:
-        return time_up_redirect(attempt, deadline)
-
-    answers = {a.question_id: a for a in attempt.answers}
-    payload = {
-        "attemptId": attempt.id,
-        "remaining": remaining_seconds(deadline, now),
-        "urls": {
-            "answer": url_for("student.answer_api", attempt_id=attempt.id),
-            "submit": url_for("student.submit", attempt_id=attempt.id),
-            "result": url_for("student.result", attempt_id=attempt.id),
-        },
-        # correct answers are never sent to the browser
-        "questions": [
-            {
-                "id": q.id,
-                "text": q.text,
-                "type": q.qtype,
-                "marks": q.marks,
-                "options": [
-                    {"id": o.id, "text": o.text} for o in ordered_options(attempt, q)
-                ],
-            }
-            for q in ordered_questions(attempt)
-        ],
-        "answers": {
-            str(a.question_id): {
-                "options": a.selected_option_ids or [],
-                "text": a.text_answer or "",
-                "marked": a.marked_for_review,
-            }
-            for a in answers.values()
-        },
+    boot = {
+        "urls": {"begin": url_for("student.exam_begin", exam_id=exam.id)},
+        "snapshotInterval": SNAPSHOT_INTERVAL_SECONDS,
+        "labels": VIOLATION_LABELS,
     }
-    return render_template("student/exam.html", exam=attempt.exam, payload=payload)
+    return render_template("student/exam.html", exam=exam, resume=bool(attempt), boot=boot)
 
+
+@bp.route("/exams/<int:exam_id>/begin", methods=["POST"])
+@role_required("student")
+def exam_begin(exam_id):
+    """Called after the system check. Creates the attempt (this is when the timer
+    starts) or returns the existing one."""
+    exam = get_published_exam(exam_id)
+    data = request.get_json(silent=True) or {}
+    attempt = find_attempt(exam.id)
+
+    if attempt:
+        expire_if_needed(attempt)
+        if attempt.status != "in_progress":
+            return jsonify(
+                ok=False, error="This exam is already finished.",
+                result_url=url_for("student.result", attempt_id=attempt.id),
+            ), 409
+    else:
+        now = now_utc()
+        if not (exam.start_time <= now < exam.end_time):
+            return jsonify(ok=False, error="This exam is not open right now."), 400
+        if not exam.questions:
+            return jsonify(ok=False, error="This exam has no questions yet."), 400
+        if data.get("consent") is not True:
+            return jsonify(ok=False, error="You must accept the exam rules to start."), 400
+
+        attempt = Attempt(exam_id=exam.id, student_id=current_user.id, started_at=now)
+        db.session.add(attempt)
+        try:
+            db.session.commit()
+        except IntegrityError:  # double click: the attempt already exists
+            db.session.rollback()
+            attempt = find_attempt(exam.id)
+
+    return jsonify(ok=True, payload=build_payload(attempt))
+
+
+# ---------- calls made by the exam page ----------
 
 @bp.route("/attempts/<int:attempt_id>/answer", methods=["POST"])
 @role_required("student")
@@ -289,6 +325,66 @@ def answer_api(attempt_id):
     return jsonify(ok=True, finished=finished, result_url=result_url)
 
 
+@bp.route("/attempts/<int:attempt_id>/violation", methods=["POST"])
+@role_required("student")
+def violation_api(attempt_id):
+    attempt = get_attempt(attempt_id)
+    result_url = url_for("student.result", attempt_id=attempt.id)
+    if attempt.status != "in_progress":
+        return jsonify(ok=False, finished=True, result_url=result_url)
+
+    deadline = deadline_for(attempt)
+    now = now_utc()
+    if now > deadline + timedelta(seconds=GRACE_SECONDS):
+        finalize(attempt, "auto_submitted", deadline)
+        return jsonify(ok=False, finished=True, result_url=result_url)
+
+    data = request.get_json(silent=True) or {}
+    kind = data.get("kind")
+    if kind not in VIOLATION_LABELS:
+        return jsonify(ok=False, error="bad request"), 400
+
+    db.session.add(Violation(attempt_id=attempt.id, kind=kind))
+    db.session.commit()
+
+    count = count_violations(attempt)
+    finished = count >= MAX_VIOLATIONS
+    if finished:
+        finalize(attempt, "auto_submitted", now)
+        flash(f"Your exam was submitted automatically after {MAX_VIOLATIONS} violations.", "error")
+
+    return jsonify(
+        ok=True, finished=finished, count=count, max=MAX_VIOLATIONS,
+        integrity=max(0, 100 - 10 * count), result_url=result_url,
+    )
+
+
+@bp.route("/attempts/<int:attempt_id>/snapshot", methods=["POST"])
+@role_required("student")
+def snapshot_api(attempt_id):
+    attempt = get_attempt(attempt_id)
+    result_url = url_for("student.result", attempt_id=attempt.id)
+    if attempt.status != "in_progress":
+        return jsonify(ok=False, finished=True, result_url=result_url)
+
+    upload = request.files.get("image")
+    if upload is None:
+        return jsonify(ok=False, error="bad request"), 400
+    image = upload.read(MAX_SNAPSHOT_BYTES + 1)
+    if len(image) > MAX_SNAPSHOT_BYTES or not image.startswith(b"\xff\xd8\xff"):  # JPEG only
+        return jsonify(ok=False, error="bad request"), 400
+
+    stored = db.session.scalar(
+        db.select(func.count(Snapshot.id)).where(Snapshot.attempt_id == attempt.id)
+    )
+    if stored >= MAX_SNAPSHOTS_PER_ATTEMPT:
+        return jsonify(ok=True, skipped=True)
+
+    db.session.add(Snapshot(attempt_id=attempt.id, image_data=image))
+    db.session.commit()
+    return jsonify(ok=True)
+
+
 @bp.route("/attempts/<int:attempt_id>/submit", methods=["POST"])
 @role_required("student")
 def submit(attempt_id):
@@ -314,5 +410,5 @@ def submit(attempt_id):
 def result(attempt_id):
     attempt = get_attempt(attempt_id)
     if attempt.status == "in_progress" and not expire_if_needed(attempt):
-        return redirect(url_for("student.exam_run", attempt_id=attempt.id))
+        return redirect(url_for("student.exam_take", exam_id=attempt.exam_id))
     return render_template("student/result.html", attempt=attempt, exam=attempt.exam)

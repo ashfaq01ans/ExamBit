@@ -15,3 +15,9 @@ TODO later
 - Styling (custom CSS, no Tailwind)
 - Take report screenshots after styling
 - Deploy: Render + Neon, run db upgrade on Neon
+
+limitiaions to know 
+A browser can detect and log these actions. It cannot stop them. A determined cheater can use a second phone. Proctoring here deters and leaves evidence.
+Chrome and Edge are the supported browsers. Firefox and Safari may not report what was shared, so any share is accepted.
+A covered camera lens is not detected. “Camera off” fires only when the device is removed or permission is revoked.
+An OS notification popup can steal focus and count as a tab switch. Tell students to close other apps.

@@ -35,6 +35,8 @@
   </p>
 {% endif %}
 
+<p><a href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">View attempts and proctoring reports ({{ exam.attempts|length }})</a></p>
+
 <h2>Questions ({{ exam.questions|length }})</h2>
 {% if not locked %}
   <p><a href="{{ url_for('teacher.question_new', exam_id=exam.id) }}">+ Add question</a></p>

@@ -1,4 +1,6 @@
 /* Basic layout for the exam screen. Full styling comes later. */
+[hidden] { display: none !important; }
+
 .exam-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -17,6 +19,29 @@
 .pal-btn.answered { background: #d6f5d6; }
 .pal-btn.marked { outline: 2px solid #e08a00; }
 .pal-btn.current { font-weight: 700; border: 2px solid #000; }
+
+/* camera preview in the corner */
+.cam-corner {
+  position: fixed; right: 12px; bottom: 12px;
+  width: 180px; height: 135px;
+  object-fit: cover; background: #000;
+  border: 2px solid #333; z-index: 50;
+}
+
+/* blocks the exam until the student fixes fullscreen, screen share or camera */
+.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(255, 255, 255, 0.97);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.overlay-box { max-width: 420px; padding: 1rem; }
+
+/* violation warning banner */
+.warning {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 90;
+  margin: 0; padding: 0.6rem; text-align: center;
+  background: #b00020; color: #fff;
+}
 
 @media (max-width: 700px) {
   .exam-layout { grid-template-columns: 1fr; }

@@ -16,13 +16,14 @@
 <p>{{ exam.instructions }}</p>
 {% endif %}
 
-{% if state == 'live' %}
+{% if state == 'live' or state == 'in_progress' %}
   <h2>Exam rules</h2>
   <ul>
     <li>You can attempt this exam only once.</li>
     <li>The timer runs on the server. It cannot be paused, even if you close the page.</li>
     <li>The exam is submitted automatically when time runs out.</li>
-    <li>Your camera must stay on and your screen must stay shared for the whole exam.</li>
+    <li>Your camera must stay on and your entire screen must stay shared for the whole exam.</li>
+    <li>The exam runs in fullscreen. Use a laptop or desktop with Chrome or Edge.</li>
     <li>Answers are saved automatically while you work.</li>
   </ul>
 
@@ -36,24 +37,19 @@
     <li>Leaving fullscreen mode</li>
     <li>Right-clicking</li>
     <li>Stopping screen sharing</li>
+    <li>Turning off the camera</li>
   </ul>
   <p>
     Copying, cutting and pasting are also not allowed. Getting help from other people or
     devices, or covering the camera, is not allowed.
   </p>
 
-  <form method="post" action="{{ url_for('student.exam_start', exam_id=exam.id) }}">
-    <p>
-      <label>
-        <input type="checkbox" name="consent" value="yes" required>
-        I have read the instructions and agree to the rules, including monitoring of this exam.
-      </label>
-    </p>
-    <p><button type="submit">Start exam</button></p>
-  </form>
-{% elif state == 'in_progress' %}
-  <p>You have already started this exam.</p>
-  <p><a href="{{ url_for('student.exam_run', attempt_id=attempt.id) }}">Continue exam</a></p>
+  {% if state == 'live' %}
+    <p><a href="{{ url_for('student.exam_take', exam_id=exam.id) }}">Continue to system check</a></p>
+  {% else %}
+    <p>You have already started this exam.</p>
+    <p><a href="{{ url_for('student.exam_take', exam_id=exam.id) }}">Continue exam</a></p>
+  {% endif %}
 {% elif state == 'finished' %}
   <p>You have completed this exam.</p>
   <p><a href="{{ url_for('student.result', attempt_id=attempt.id) }}">View result</a></p>

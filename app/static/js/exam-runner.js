@@ -1,35 +1,14 @@
 // ExamBit exam screen. One page for the whole attempt: questions change without
-// reloading, so camera, screen share and fullscreen (added in the proctoring step)
-// stay alive. The SERVER stays the authority: it keeps the deadline, saves answers
-// and finalizes the attempt. This script only displays and sends.
+// reloading, so camera, screen share and fullscreen stay alive. The SERVER stays the
+// authority: it keeps the deadline, saves answers and finalizes the attempt. This
+// script only displays and sends. proctor.js calls ExamRunner.start(payload).
 (function () {
   "use strict";
 
-  var data = JSON.parse(document.getElementById("exam-data").textContent);
-  var questions = data.questions;
-
-  // qid -> {options: [ids], text: "", marked: bool}
-  var answers = {};
-  questions.forEach(function (q) {
-    var saved = data.answers[q.id] || {};
-    answers[q.id] = {
-      options: (saved.options || []).slice(),
-      text: saved.text || "",
-      marked: !!saved.marked
-    };
-  });
-
-  var current = 0;
-  var view = "question"; // or "review"
-  var dirty = {};        // qid -> true while a change is not yet saved
-  var saveChain = Promise.resolve(); // saves run one at a time, in order
-  var textTimer = null;
-  var submitting = false;
-  var leaving = false;
-
-  var main = document.getElementById("main-panel");
-  var side = document.getElementById("side-panel");
-  var timerEl, statusEl, paletteEl;
+  var data, questions, answers;
+  var current, view, dirty, saveChain, textTimer, submitting, leaving;
+  var main, side, timerEl, statusEl, paletteEl;
+  var remaining, startedAt;
 
   // ---------- small helpers ----------
 
@@ -306,6 +285,7 @@
 
   function goResult(url) {
     leaving = true;
+    if (window.Proctor) window.Proctor.stop();
     window.location.href = url;
   }
 
@@ -325,13 +305,14 @@
   }
 
   function submitExam() {
-    if (window.confirm("Submit your exam now? You cannot change answers after this.")) doSubmit();
+    // the browser confirm box can make the window lose focus: do not count that
+    if (window.Proctor) window.Proctor.suppressFocus(20000);
+    var ok = window.confirm("Submit your exam now? You cannot change answers after this.");
+    if (window.Proctor) window.Proctor.suppressFocus(1500);
+    if (ok) doSubmit();
   }
 
   // ---------- timer (display only; the server decides the real deadline) ----------
-
-  var remaining = data.remaining;
-  var startedAt = performance.now();
 
   function tick() {
     var left = Math.max(0, remaining - Math.floor((performance.now() - startedAt) / 1000));
@@ -341,17 +322,46 @@
     if (left === 0) doSubmit();
   }
 
-  // warn if the tab is closed or refreshed while a change is still unsaved
-  window.addEventListener("beforeunload", function (event) {
-    if (!leaving && Object.keys(dirty).length) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-  });
+  // ---------- start ----------
 
-  buildSide();
-  render();
-  tick();
-  setInterval(tick, 500);
-  setInterval(flushAll, 5000); // retry any save that failed
+  function start(payload) {
+    data = payload;
+    questions = data.questions;
+    answers = {};
+    questions.forEach(function (q) {
+      var saved = data.answers[q.id] || {};
+      answers[q.id] = {
+        options: (saved.options || []).slice(),
+        text: saved.text || "",
+        marked: !!saved.marked
+      };
+    });
+    current = 0;
+    view = "question";
+    dirty = {};
+    saveChain = Promise.resolve();
+    textTimer = null;
+    submitting = false;
+    leaving = false;
+    remaining = data.remaining;
+    startedAt = performance.now();
+    main = document.getElementById("main-panel");
+    side = document.getElementById("side-panel");
+
+    // warn if the tab is closed or refreshed while a change is still unsaved
+    window.addEventListener("beforeunload", function (event) {
+      if (!leaving && Object.keys(dirty).length) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
+
+    buildSide();
+    render();
+    tick();
+    setInterval(tick, 500);
+    setInterval(flushAll, 5000); // retry any save that failed
+  }
+
+  window.ExamRunner = { start: start };
 })();

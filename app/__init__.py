@@ -28,6 +28,7 @@ def create_app():
 
     from app.auth.routes import bp as auth_bp
     from app.teacher.routes import bp as teacher_bp
+    from app.teacher import reports  # noqa: F401  (adds report routes to the teacher blueprint)
     from app.student.routes import bp as student_bp
 
     app.register_blueprint(auth_bp)

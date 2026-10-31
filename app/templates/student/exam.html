@@ -6,12 +6,59 @@
 {% block content %}
 <h1>{{ exam.title }}</h1>
 <noscript><p>JavaScript is required to take this exam.</p></noscript>
-<div class="exam-layout">
+
+<section id="gate">
+  <h2>System check</h2>
+  {% if resume %}
+    <p><strong>You already started this exam and your timer is running. Finish the checks to continue.</strong></p>
+  {% else %}
+    <p>
+      Your {{ exam.duration_minutes }} minutes start only when you click "Begin exam" at the end.
+      Use Chrome or Edge on a laptop or desktop with a webcam.
+    </p>
+  {% endif %}
+
+  <p id="gate-error" class="flash error" hidden></p>
+
+  <ol>
+    <li>
+      <label>
+        <input type="checkbox" id="consent">
+        I have read the rules and agree to be monitored: webcam snapshots, screen sharing
+        and activity tracking during the exam.
+      </label>
+    </li>
+    <li>
+      <button type="button" id="btn-camera">Enable camera</button>
+      <span id="status-camera">Not done</span>
+    </li>
+    <li>
+      <button type="button" id="btn-screen" disabled>Share entire screen</button>
+      <span id="status-screen">Not done</span>
+    </li>
+    <li>
+      <button type="button" id="btn-begin" disabled>Begin exam (enters fullscreen)</button>
+    </li>
+  </ol>
+</section>
+
+<div id="exam-app" class="exam-layout" hidden>
   <section id="main-panel"></section>
   <aside id="side-panel"></aside>
 </div>
-<script id="exam-data" type="application/json">{{ payload|tojson }}</script>
+
+<video id="cam" class="cam-corner" autoplay muted playsinline hidden></video>
+<p id="warning-bar" class="warning" hidden></p>
+<div id="overlay" class="overlay" hidden>
+  <div class="overlay-box">
+    <p id="overlay-text"></p>
+    <button type="button" id="overlay-btn"></button>
+  </div>
+</div>
+
+<script id="boot-data" type="application/json">{{ boot|tojson }}</script>
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/exam-runner.js') }}"></script>
+<script src="{{ url_for('static', filename='js/proctor.js') }}"></script>
 {% endblock %}

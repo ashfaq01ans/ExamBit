@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Attempts - {{ exam.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">&larr; Back to exam</a></p>
+<h1>Attempts: {{ exam.title }}</h1>
+
+{% if attempts %}
+<table border="1" cellpadding="6">
+  <tr>
+    <th>Student</th><th>Started (IST)</th><th>Status</th>
+    <th>Violations</th><th>Integrity score</th><th>Score</th><th></th>
+  </tr>
+  {% for attempt in attempts %}
+  <tr>
+    <td>{{ attempt.student.name }}<br>{{ attempt.student.email }}</td>
+    <td>{{ attempt.started_at|localdt }}</td>
+    <td>
+      {% if attempt.status == 'in_progress' %}In progress
+      {% elif attempt.status == 'submitted' %}Submitted
+      {% else %}Auto-submitted{% endif %}
+    </td>
+    <td>{{ attempt.violations|length }}</td>
+    <td>{{ attempt.integrity_score }}</td>
+    <td>{{ attempt.score if attempt.score is not none else '\u2013' }}</td>
+    <td><a href="{{ url_for('teacher.attempt_detail', attempt_id=attempt.id) }}">Proctoring report</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No student has attempted this exam yet.</p>
+{% endif %}
+{% endblock %}
