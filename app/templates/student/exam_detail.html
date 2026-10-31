@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - ExamBit{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('student.dashboard') }}">&larr; Back to dashboard</a></p>
+<h1>{{ exam.title }}</h1>
+
+<p>
+  Window (IST): {{ exam.start_time|localdt }} to {{ exam.end_time|localdt }}<br>
+  Duration: {{ exam.duration_minutes }} minutes<br>
+  Questions: {{ exam.questions|length }}<br>
+  Total marks: {{ exam.questions|sum(attribute='marks') }}
+</p>
+
+{% if exam.instructions %}
+<h2>Instructions from your teacher</h2>
+<p>{{ exam.instructions }}</p>
+{% endif %}
+
+{% if state == 'live' %}
+  <h2>Exam rules</h2>
+  <ul>
+    <li>You can attempt this exam only once.</li>
+    <li>The timer runs on the server. It cannot be paused, even if you close the page.</li>
+    <li>The exam is submitted automatically when time runs out.</li>
+    <li>Your camera must stay on and your screen must stay shared for the whole exam.</li>
+    <li>Answers are saved automatically while you work.</li>
+  </ul>
+
+  <h2>Prohibited actions</h2>
+  <p>
+    The following are recorded as violations. Reaching 10 violations submits your exam
+    automatically, and every violation lowers your integrity score.
+  </p>
+  <ul>
+    <li>Switching to another tab or window</li>
+    <li>Leaving fullscreen mode</li>
+    <li>Right-clicking</li>
+    <li>Stopping screen sharing</li>
+  </ul>
+  <p>
+    Copying, cutting and pasting are also not allowed. Getting help from other people or
+    devices, or covering the camera, is not allowed.
+  </p>
+
+  <form method="post" action="{{ url_for('student.exam_start', exam_id=exam.id) }}">
+    <p>
+      <label>
+        <input type="checkbox" name="consent" value="yes" required>
+        I have read the instructions and agree to the rules, including monitoring of this exam.
+      </label>
+    </p>
+    <p><button type="submit">Start exam</button></p>
+  </form>
+{% elif state == 'in_progress' %}
+  <p>You have already started this exam.</p>
+  <p><a href="{{ url_for('student.exam_run', attempt_id=attempt.id) }}">Continue exam</a></p>
+{% elif state == 'finished' %}
+  <p>You have completed this exam.</p>
+  <p><a href="{{ url_for('student.result', attempt_id=attempt.id) }}">View result</a></p>
+{% elif state == 'upcoming' %}
+  <p>This exam opens on {{ exam.start_time|localdt }} (IST).</p>
+{% else %}
+  <p>This exam is closed. You did not attempt it.</p>
+{% endif %}
+{% endblock %}

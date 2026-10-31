@@ -2,5 +2,46 @@
 {% block title %}Student Dashboard - ExamBit{% endblock %}
 {% block content %}
 <h1>Student Dashboard</h1>
-<p>Welcome, {{ current_user.name }}. Your exams will appear here.</p>
+<p>Welcome, {{ current_user.name }}.</p>
+
+{% macro exam_table(rows, kind) %}
+<table border="1" cellpadding="6">
+  <tr><th>Exam</th><th>Window (IST)</th><th>Duration</th><th></th></tr>
+  {% for exam, attempt in rows %}
+  <tr>
+    <td>{{ exam.title }}</td>
+    <td>{{ exam.start_time|localdt }}<br>to {{ exam.end_time|localdt }}</td>
+    <td>{{ exam.duration_minutes }} min</td>
+    <td>
+      {% if kind == 'in_progress' %}
+        <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Continue</a>
+      {% elif kind == 'live' %}
+        <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Open</a>
+      {% elif kind == 'upcoming' %}
+        <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Details</a>
+      {% else %}
+        {% if attempt %}
+          {{ 'Submitted' if attempt.status == 'submitted' else 'Auto-submitted' }}
+          - <a href="{{ url_for('student.result', attempt_id=attempt.id) }}">View</a>
+        {% else %}
+          Missed
+        {% endif %}
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endmacro %}
+
+<h2>In progress</h2>
+{% if in_progress %}{{ exam_table(in_progress, 'in_progress') }}{% else %}<p>None.</p>{% endif %}
+
+<h2>Live now</h2>
+{% if live %}{{ exam_table(live, 'live') }}{% else %}<p>No exams are open right now.</p>{% endif %}
+
+<h2>Upcoming</h2>
+{% if upcoming %}{{ exam_table(upcoming, 'upcoming') }}{% else %}<p>No upcoming exams.</p>{% endif %}
+
+<h2>Past exams</h2>
+{% if past %}{{ exam_table(past, 'past') }}{% else %}<p>No past exams yet.</p>{% endif %}
 {% endblock %}

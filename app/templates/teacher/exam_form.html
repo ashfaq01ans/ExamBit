@@ -14,15 +14,21 @@
   </p>
   <p>
     <label for="duration_minutes">Duration (minutes)</label><br>
-    <input type="number" id="duration_minutes" name="duration_minutes" min="1" max="300" value="{{ values.duration_minutes }}" required>
+    <input type="number" id="duration_minutes" name="duration_minutes" min="1" max="300" value="{{ values.duration_minutes }}" required><br>
+    <small>How long each student gets once they start.</small>
   </p>
   <p>
     <label for="start_time">Window opens</label><br>
-    <input type="datetime-local" id="start_time" name="start_time" value="{{ values.start_time }}" required>
+    <input type="datetime-local" id="start_time" name="start_time" value="{{ values.start_time }}" required><br>
+    <small>Students can start the exam from this time.</small>
   </p>
   <p>
     <label for="end_time">Window closes</label><br>
-    <input type="datetime-local" id="end_time" name="end_time" value="{{ values.end_time }}" required>
+    <input type="datetime-local" id="end_time" name="end_time" value="{{ values.end_time }}" required><br>
+    <small>
+      Every attempt must be finished by this time. A student who starts late gets less than the
+      full duration. Leave extra time between opening and closing.
+    </small>
   </p>
   <p><button type="submit">{{ 'Save changes' if exam else 'Create exam' }}</button></p>
 </form>

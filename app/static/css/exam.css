@@ -1,0 +1,23 @@
+/* Basic layout for the exam screen. Full styling comes later. */
+.exam-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.q-text { white-space: pre-wrap; }
+.answer-text { width: 100%; box-sizing: border-box; }
+
+.timer { font-size: 1.6rem; font-weight: 700; margin: 0.2rem 0; }
+.save-status { min-height: 1.2em; font-size: 0.9rem; }
+
+.pal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+.pal-btn { padding: 0.4rem 0; cursor: pointer; }
+.pal-btn.answered { background: #d6f5d6; }
+.pal-btn.marked { outline: 2px solid #e08a00; }
+.pal-btn.current { font-weight: 700; border: 2px solid #000; }
+
+@media (max-width: 700px) {
+  .exam-layout { grid-template-columns: 1fr; }
+}

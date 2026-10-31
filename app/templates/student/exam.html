@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} - ExamBit{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/exam.css') }}">
+{% endblock %}
+{% block content %}
+<h1>{{ exam.title }}</h1>
+<noscript><p>JavaScript is required to take this exam.</p></noscript>
+<div class="exam-layout">
+  <section id="main-panel"></section>
+  <aside id="side-panel"></aside>
+</div>
+<script id="exam-data" type="application/json">{{ payload|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/exam-runner.js') }}"></script>
+{% endblock %}
