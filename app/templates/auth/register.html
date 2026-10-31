@@ -39,7 +39,30 @@
       <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>Teacher</option>
     </select>
   </p>
+  <div id="student-fields">
+    <p>
+      <label for="course">Course (students)</label><br>
+      <select id="course" name="course">
+        <option value="">Choose...</option>
+        {% for c in COURSES %}
+          <option value="{{ c }}" {% if course == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="admission_session">Admission session (students)</label><br>
+      <select id="admission_session" name="admission_session">
+        <option value="">Choose...</option>
+        {% for s in session_options() %}
+          <option value="{{ s }}" {% if admission_session == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </p>
+  </div>
   <p><button type="submit">Create account</button></p>
 </form>
 <p>Already registered? <a href="{{ url_for('auth.login') }}">Login</a></p>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
 {% endblock %}

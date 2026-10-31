@@ -13,6 +13,25 @@
     <textarea id="instructions" name="instructions" rows="5" cols="60">{{ values.instructions }}</textarea>
   </p>
   <p>
+    <label for="course">Course</label><br>
+    <select id="course" name="course">
+      <option value="">All courses</option>
+      {% for c in COURSES %}
+        <option value="{{ c }}" {% if values.course == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </p>
+  <p>
+    <label for="admission_session">Admission session</label><br>
+    <select id="admission_session" name="admission_session">
+      <option value="">All sessions</option>
+      {% for s in session_options() %}
+        <option value="{{ s }}" {% if values.admission_session == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select><br>
+    <small>Only students of this course and session will see the exam. Leave both as "All" to open it to everyone.</small>
+  </p>
+  <p>
     <label for="duration_minutes">Duration (minutes)</label><br>
     <input type="number" id="duration_minutes" name="duration_minutes" min="1" max="300" value="{{ values.duration_minutes }}" required><br>
     <small>How long each student gets once they start.</small>

@@ -5,6 +5,7 @@ from flask_login import current_user
 
 from app import db
 from app.decorators import role_required
+from app.classes import COURSES, session_options
 from app.models import Exam, Option, Question
 from app.timeutil import local_input, parse_local
 
@@ -17,7 +18,10 @@ QUESTION_TYPES = {
     "short": "Short answer",
 }
 
-EXAM_FIELDS = ("title", "instructions", "duration_minutes", "start_time", "end_time")
+EXAM_FIELDS = (
+    "title", "instructions", "duration_minutes", "start_time", "end_time",
+    "course", "admission_session",
+)
 
 
 # ---------- helpers ----------
@@ -41,6 +45,8 @@ def values_from_exam(exam):
         "duration_minutes": exam.duration_minutes,
         "start_time": local_input(exam.start_time),
         "end_time": local_input(exam.end_time),
+        "course": exam.course or "",
+        "admission_session": exam.admission_session or "",
     }
 
 
@@ -73,12 +79,21 @@ def validate_exam(values):
     elif duration and (end - start) < timedelta(minutes=duration):
         errors.append("The time window must be at least as long as the duration.")
 
+    course = values["course"] or None
+    if course is not None and course not in COURSES:
+        errors.append("Choose a valid course.")
+    admission_session = values["admission_session"] or None
+    if admission_session is not None and admission_session not in session_options():
+        errors.append("Choose a valid admission session.")
+
     parsed = {
         "title": title,
         "instructions": values["instructions"],
         "duration_minutes": duration,
         "start_time": start,
         "end_time": end,
+        "course": course,
+        "admission_session": admission_session,
     }
     return parsed, errors
 

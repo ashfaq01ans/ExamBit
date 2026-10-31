@@ -269,16 +269,31 @@
   }
 
   function buildSide() {
+    var layout = side.parentNode;
     timerEl = el("p", { class: "timer", text: "--:--" });
     statusEl = el("p", { class: "save-status", "aria-live": "polite" });
     paletteEl = el("div", { class: "pal-grid" });
+
+    // the timer, save status and Review button stay visible when the panel is collapsed
+    var body = el("div", { class: "side-body" }, [
+      el("p", { text: "Questions" }),
+      paletteEl,
+      el("p", { text: "Green: answered. Orange outline: marked for review." })
+    ]);
+    var toggle = el("button", { type: "button", "aria-expanded": "true", text: "Hide panel \u25B8" });
+    toggle.addEventListener("click", function () {
+      var collapsed = layout.classList.toggle("panel-collapsed");
+      body.hidden = collapsed;
+      toggle.textContent = collapsed ? "\u25C2 Show panel" : "Hide panel \u25B8";
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+
     side.appendChild(el("p", { text: "Time left" }));
     side.appendChild(timerEl);
     side.appendChild(statusEl);
-    side.appendChild(el("p", { text: "Questions" }));
-    side.appendChild(paletteEl);
-    side.appendChild(el("p", { text: "Green: answered. Orange outline: marked for review." }));
     side.appendChild(el("button", { type: "button", text: "Review page", onclick: showReview }));
+    side.appendChild(toggle);
+    side.appendChild(body);
   }
 
   // ---------- submit and finish ----------
@@ -314,11 +329,19 @@
 
   // ---------- timer (display only; the server decides the real deadline) ----------
 
+  // 59:59 below one hour, 1:30:20 from one hour up
+  function formatTime(totalSeconds) {
+    var hours = Math.floor(totalSeconds / 3600);
+    var minutes = Math.floor((totalSeconds % 3600) / 60);
+    var seconds = totalSeconds % 60;
+    var mm = String(minutes).padStart(2, "0");
+    var ss = String(seconds).padStart(2, "0");
+    return hours > 0 ? hours + ":" + mm + ":" + ss : mm + ":" + ss;
+  }
+
   function tick() {
     var left = Math.max(0, remaining - Math.floor((performance.now() - startedAt) / 1000));
-    var minutes = Math.floor(left / 60);
-    var seconds = left % 60;
-    timerEl.textContent = String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+    timerEl.textContent = formatTime(left);
     if (left === 0) doSubmit();
   }
 

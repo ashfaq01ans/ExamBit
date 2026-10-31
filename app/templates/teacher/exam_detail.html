@@ -8,6 +8,7 @@
   Status: <strong>{{ 'Published' if exam.is_published else 'Draft' }}</strong><br>
   Window (IST): {{ exam.start_time|localdt }} to {{ exam.end_time|localdt }}<br>
   Duration: {{ exam.duration_minutes }} minutes<br>
+  For: {{ exam.course or 'All courses' }}, {{ exam.admission_session or 'All sessions' }}<br>
   Total marks: {{ exam.questions|sum(attribute='marks') }}
 </p>
 {% if exam.instructions %}

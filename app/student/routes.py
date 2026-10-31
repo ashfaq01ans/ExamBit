@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.decorators import role_required
+from app.grading import compute_totals, grade_attempt
 from app.models import Answer, Attempt, Exam, Question, Snapshot, Violation
 from app.proctoring import (
     MAX_SNAPSHOT_BYTES, MAX_SNAPSHOTS_PER_ATTEMPT, MAX_VIOLATIONS,
@@ -28,9 +29,20 @@ def now_utc():
     return datetime.now(timezone.utc)
 
 
+def is_eligible(exam):
+    """A student sees only exams for their own course and admission session.
+    An exam with no course or no session set is open to everyone."""
+    course_ok = exam.course is None or exam.course == current_user.course
+    session_ok = (
+        exam.admission_session is None
+        or exam.admission_session == current_user.admission_session
+    )
+    return course_ok and session_ok
+
+
 def get_published_exam(exam_id):
     exam = db.session.get(Exam, exam_id)
-    if exam is None or not exam.is_published:
+    if exam is None or not exam.is_published or not is_eligible(exam):
         abort(404)
     return exam
 
@@ -64,6 +76,7 @@ def finalize(attempt, status, when):
         return
     attempt.status = status
     attempt.submitted_at = when
+    grade_attempt(attempt)
     db.session.commit()
 
 
@@ -180,6 +193,7 @@ def dashboard():
     exams = db.session.execute(
         db.select(Exam).filter_by(is_published=True).order_by(Exam.start_time)
     ).scalars().all()
+    exams = [exam for exam in exams if is_eligible(exam)]
     attempts = {a.exam_id: a for a in current_user.attempts}
     for attempt in attempts.values():
         expire_if_needed(attempt)  # finalize attempts whose time ran out
@@ -411,4 +425,10 @@ def result(attempt_id):
     attempt = get_attempt(attempt_id)
     if attempt.status == "in_progress" and not expire_if_needed(attempt):
         return redirect(url_for("student.exam_take", exam_id=attempt.exam_id))
-    return render_template("student/result.html", attempt=attempt, exam=attempt.exam)
+    earned, pending = compute_totals(attempt)
+    total = sum(q.marks for q in attempt.exam.questions)
+    percent = round(100 * earned / total, 1) if total else 0
+    return render_template(
+        "student/result.html", attempt=attempt, exam=attempt.exam,
+        earned=earned, pending=pending, total=total, percent=percent,
+    )

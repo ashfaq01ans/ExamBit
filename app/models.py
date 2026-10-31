@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(10), nullable=False)  # 'teacher' or 'student'
+    course = db.Column(db.String(20))             # students only, e.g. 'BCA'
+    admission_session = db.Column(db.String(20))  # students only, e.g. 'Jul 2024'
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow)
 
     exams = db.relationship("Exam", backref="teacher", lazy=True)
@@ -46,6 +48,8 @@ class Exam(db.Model):
     start_time = db.Column(db.DateTime(timezone=True), nullable=False)
     end_time = db.Column(db.DateTime(timezone=True), nullable=False)
     is_published = db.Column(db.Boolean, default=False, nullable=False)
+    course = db.Column(db.String(20))             # empty = open to all courses
+    admission_session = db.Column(db.String(20))  # empty = open to all sessions
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow)
 
     questions = db.relationship(

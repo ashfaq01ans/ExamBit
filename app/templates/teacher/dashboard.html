@@ -8,11 +8,12 @@
 {% if exams %}
 <table border="1" cellpadding="6">
   <tr>
-    <th>Title</th><th>Window (IST)</th><th>Duration</th><th>Questions</th><th>Status</th><th></th>
+    <th>Title</th><th>For</th><th>Window (IST)</th><th>Duration</th><th>Questions</th><th>Status</th><th></th>
   </tr>
   {% for exam in exams %}
   <tr>
     <td>{{ exam.title }}</td>
+    <td>{{ exam.course or 'All courses' }}<br>{{ exam.admission_session or 'All sessions' }}</td>
     <td>{{ exam.start_time|localdt }}<br>to {{ exam.end_time|localdt }}</td>
     <td>{{ exam.duration_minutes }} min</td>
     <td>{{ exam.questions|length }}</td>

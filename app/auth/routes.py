@@ -2,6 +2,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app import db
+from app.classes import COURSES, session_options
 from app.models import User
 
 bp = Blueprint("auth", __name__)
@@ -24,6 +25,8 @@ def register():
         password = request.form.get("password", "")
         confirm = request.form.get("confirm", "")
         role = request.form.get("role", "")
+        course = request.form.get("course", "")
+        admission_session = request.form.get("admission_session", "")
 
         errors = []
         if not name:
@@ -36,6 +39,11 @@ def register():
             errors.append("Passwords do not match.")
         if role not in ROLES:
             errors.append("Choose a role.")
+        if role == "student":
+            if course not in COURSES:
+                errors.append("Choose your course.")
+            if admission_session not in session_options():
+                errors.append("Choose your admission session.")
         if not errors:
             existing = db.session.execute(
                 db.select(User).filter_by(email=email)
@@ -46,9 +54,17 @@ def register():
         if errors:
             for message in errors:
                 flash(message, "error")
-            return render_template("auth/register.html", name=name, email=email, role=role)
+            return render_template(
+                "auth/register.html", name=name, email=email, role=role,
+                course=course, admission_session=admission_session,
+            )
 
-        user = User(name=name, email=email, role=role)
+        is_student = role == "student"
+        user = User(
+            name=name, email=email, role=role,
+            course=course if is_student else None,
+            admission_session=admission_session if is_student else None,
+        )
         user.set_password(password)
         db.session.add(user)
         db.session.commit()

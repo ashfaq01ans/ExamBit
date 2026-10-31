@@ -21,3 +21,8 @@ A browser can detect and log these actions. It cannot stop them. A determined ch
 Chrome and Edge are the supported browsers. Firefox and Safari may not report what was shared, so any share is accepted.
 A covered camera lens is not detected. “Camera off” fires only when the device is removed or permission is revoked.
 An OS notification popup can steal focus and count as a tab switch. Tell students to close other apps.
+
+## clean DB commands
+flask --app run reset-data --snapshots-only
+flask --app run reset-data --keep-users
+flask --app run reset-data

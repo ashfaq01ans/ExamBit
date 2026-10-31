@@ -26,6 +26,13 @@ def create_app():
     app.add_template_filter(local_display, "localdt")
     app.add_template_filter(local_input, "localinput")
 
+    from app.classes import COURSES, session_options
+    from app.cli import reset_data
+
+    app.jinja_env.globals["COURSES"] = COURSES
+    app.jinja_env.globals["session_options"] = session_options
+    app.cli.add_command(reset_data)
+
     from app.auth.routes import bp as auth_bp
     from app.teacher.routes import bp as teacher_bp
     from app.teacher import reports  # noqa: F401  (adds report routes to the teacher blueprint)

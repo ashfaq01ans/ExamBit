@@ -22,6 +22,7 @@
       {% else %}
         {% if attempt %}
           {{ 'Submitted' if attempt.status == 'submitted' else 'Auto-submitted' }}
+          {% if attempt.score is not none %}| Score {{ '%g'|format(attempt.score) }}{% endif %}
           - <a href="{{ url_for('student.result', attempt_id=attempt.id) }}">View</a>
         {% else %}
           Missed

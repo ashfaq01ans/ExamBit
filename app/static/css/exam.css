@@ -43,6 +43,9 @@
   background: #b00020; color: #fff;
 }
 
+.exam-layout.panel-collapsed { grid-template-columns: minmax(0, 1fr) 150px; }
+.side-body { margin-top: 0.8rem; }
+
 @media (max-width: 700px) {
   .exam-layout { grid-template-columns: 1fr; }
 }

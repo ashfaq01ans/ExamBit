@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Proctoring report - {{ attempt.student.name }}{% endblock %}
+{% block title %}Review - {{ attempt.student.name }}{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">&larr; Back to attempts</a></p>
-<h1>Proctoring report</h1>
+<p><a href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">&larr; Back to results</a></p>
+<h1>Attempt review</h1>
 <p>
   Student: <strong>{{ attempt.student.name }}</strong> ({{ attempt.student.email }})<br>
+  Course / session: {{ attempt.student.course or '\u2013' }}, {{ attempt.student.admission_session or '\u2013' }}<br>
   Exam: {{ exam.title }}<br>
   Started: {{ attempt.started_at|localdt }} (IST)<br>
   Ended: {{ attempt.submitted_at|localdt if attempt.submitted_at else 'Still in progress' }}<br>
@@ -12,9 +13,57 @@
   {% if attempt.status == 'in_progress' %}In progress
   {% elif attempt.status == 'submitted' %}Submitted
   {% else %}Auto-submitted{% endif %}<br>
+  {% if attempt.status != 'in_progress' %}
+    {% if pending %}
+      Marks so far: {{ '%g'|format(earned) }} / {{ '%g'|format(total) }}
+      <strong>({{ pending }} short answer{{ '' if pending == 1 else 's' }} need grading)</strong>
+    {% else %}
+      Final marks: <strong>{{ '%g'|format(earned) }} / {{ '%g'|format(total) }}</strong>
+    {% endif %}
+    <br>
+  {% endif %}
   Violations: {{ violations|length }} of {{ max_violations }}<br>
   Integrity score: <strong>{{ attempt.integrity_score }}</strong> / 100
 </p>
+
+<h2>Answers and marks</h2>
+{% if attempt.status == 'in_progress' %}
+  <p>The student is still taking the exam.</p>
+{% else %}
+<form method="post" action="{{ url_for('teacher.attempt_grade', attempt_id=attempt.id) }}">
+  {% for row in rows %}
+  <div>
+    <p>
+      <strong>Q{{ loop.index }}.</strong> {{ row.question.text }}
+      <em>({{ types[row.question.qtype] }}, {{ '%g'|format(row.question.marks) }} marks)</em>
+    </p>
+    {% if row.question.qtype == 'short' %}
+      {% if row.text %}
+        <p>Student's answer:</p>
+        <blockquote style="white-space:pre-wrap">{{ row.text }}</blockquote>
+        <p>
+          <label>
+            Marks (0 to {{ '%g'|format(row.question.marks) }})
+            <input type="number" name="marks_{{ row.answer.id }}" min="0" max="{{ row.question.marks }}"
+                   step="0.5" value="{{ row.marks_value }}">
+          </label>
+        </p>
+      {% else %}
+        <p>No answer. 0 marks.</p>
+      {% endif %}
+    {% else %}
+      <p>Student chose: {{ row.chosen|join(', ') if row.chosen else 'No answer' }}</p>
+      <p>Correct answer: {{ row.correct|join(', ') }}</p>
+      <p>Marks: {{ '%g'|format(row.awarded) }} / {{ '%g'|format(row.question.marks) }}</p>
+    {% endif %}
+    <hr>
+  </div>
+  {% endfor %}
+  {% if has_manual %}
+    <p><button type="submit">Save marks</button></p>
+  {% endif %}
+</form>
+{% endif %}
 
 <h2>Violations</h2>
 {% if violations %}
@@ -34,6 +83,12 @@
 
 <h2>Webcam snapshots ({{ snapshots|length }})</h2>
 {% if snapshots %}
+  {% if attempt.status != 'in_progress' %}
+  <form method="post" action="{{ url_for('teacher.snapshots_delete', attempt_id=attempt.id) }}"
+        onsubmit="return confirm('Delete all snapshots of this attempt? This cannot be undone.');">
+    <p><button type="submit">Delete snapshots</button></p>
+  </form>
+  {% endif %}
   {% for snapshot in snapshots %}
     <figure style="display:inline-block; margin:4px;">
       <img src="{{ url_for('teacher.snapshot_image', snapshot_id=snapshot.id) }}"
@@ -42,6 +97,6 @@
     </figure>
   {% endfor %}
 {% else %}
-  <p>No snapshots were captured.</p>
+  <p>No snapshots stored.</p>
 {% endif %}
 {% endblock %}
