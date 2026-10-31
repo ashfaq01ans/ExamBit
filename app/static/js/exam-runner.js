@@ -319,12 +319,30 @@
       });
   }
 
+  // In-page confirm box. The browser's own confirm() can steal focus or leave
+  // fullscreen, and that would be counted as a violation.
+  function confirmDialog(message, confirmText, onConfirm) {
+    var cancel = el("button", { type: "button", text: "Cancel" });
+    var ok = el("button", { type: "button", text: confirmText });
+    var overlay = el("div", { class: "modal-overlay" }, [
+      el("div", { class: "modal-box", role: "dialog", "aria-modal": "true" }, [
+        el("p", { text: message }),
+        el("p", {}, [cancel, document.createTextNode(" "), ok])
+      ])
+    ]);
+    function close() { overlay.remove(); }
+    cancel.addEventListener("click", close);
+    ok.addEventListener("click", function () { close(); onConfirm(); });
+    document.body.appendChild(overlay);
+    cancel.focus();
+  }
+
   function submitExam() {
-    // the browser confirm box can make the window lose focus: do not count that
-    if (window.Proctor) window.Proctor.suppressFocus(20000);
-    var ok = window.confirm("Submit your exam now? You cannot change answers after this.");
-    if (window.Proctor) window.Proctor.suppressFocus(1500);
-    if (ok) doSubmit();
+    confirmDialog(
+      "Submit your exam now? You cannot change your answers after this.",
+      "Submit exam",
+      doSubmit
+    );
   }
 
   // ---------- timer (display only; the server decides the real deadline) ----------

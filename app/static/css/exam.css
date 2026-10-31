@@ -49,3 +49,14 @@
 @media (max-width: 700px) {
   .exam-layout { grid-template-columns: 1fr; }
 }
+
+/* in-page confirm box (below the fullscreen / screen-share blocking overlay) */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 95;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-box {
+  background: #fff; max-width: 380px; padding: 1.2rem 1.5rem;
+  text-align: center; border: 1px solid #333;
+}

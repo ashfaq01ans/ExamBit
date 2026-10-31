@@ -26,3 +26,5 @@ An OS notification popup can steal focus and count as a tab switch. Tell student
 flask --app run reset-data --snapshots-only
 flask --app run reset-data --keep-users
 flask --app run reset-data
+
+grading, class filter, and deployment prep done. Left: deploy, styling, toasts, score chart.

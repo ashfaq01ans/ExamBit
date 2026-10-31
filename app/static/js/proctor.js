@@ -163,7 +163,8 @@
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) focusLost();
     });
-    window.addEventListener("blur", focusLost);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
     document.addEventListener("fullscreenchange", onFullscreenChange);
 
     document.addEventListener("contextmenu", function (event) {
@@ -189,6 +190,26 @@
   }
 
   // ---------- detection ----------
+
+  // Losing window focus is not counted at once. A click on the browser's own
+  // "sharing your screen" bar, or on a system popup, takes focus for a moment.
+  // It counts only if focus has not come back after a short grace time.
+  // A hidden tab (visibilitychange) is still counted at once.
+  var BLUR_GRACE_MS = 2500;
+  var blurTimer = null;
+
+  function onBlur() {
+    if (!active || blurTimer) return;
+    blurTimer = setTimeout(function () {
+      blurTimer = null;
+      if (!document.hasFocus()) focusLost();
+    }, BLUR_GRACE_MS);
+  }
+
+  function onFocus() {
+    clearTimeout(blurTimer);
+    blurTimer = null;
+  }
 
   // A tab switch fires both visibilitychange and blur, so one cooldown counts it once.
   function focusLost() {
