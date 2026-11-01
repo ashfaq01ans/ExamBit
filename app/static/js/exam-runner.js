@@ -138,6 +138,7 @@
     flushCurrent();
     current = index;
     view = "question";
+    try { sessionStorage.setItem("exambit-q-" + data.attemptId, String(current)); } catch (error) { /* ignore */ }
     render();
   }
 
@@ -160,19 +161,24 @@
     var a = answers[q.id];
     main.textContent = "";
 
-    main.appendChild(el("h2", { text: "Question " + (current + 1) + " of " + questions.length }));
-    main.appendChild(el("p", {
-      class: "q-text",
-      text: q.text + " (" + q.marks + (q.marks === 1 ? " mark)" : " marks)")
-    }));
+    var card = el("div", { class: "card q-card" });
+    card.appendChild(el("div", { class: "q-head" }, [
+      el("span", { class: "q-count", text: "Question " + (current + 1) + " of " + questions.length }),
+      el("span", { class: "badge badge-primary", text: q.marks + (q.marks === 1 ? " mark" : " marks") })
+    ]));
+    card.appendChild(el("p", { class: "q-text", text: q.text }));
 
     if (q.type === "short") {
+      card.appendChild(el("p", { class: "q-hint", text: "Write your answer below. It is saved automatically." }));
       var area = el("textarea", { rows: "8", class: "answer-text", "aria-label": "Your answer" });
       area.value = a.text;
       area.addEventListener("input", function () { onTextInput(q, area.value); });
-      main.appendChild(area);
+      card.appendChild(area);
     } else {
-      if (q.type === "multiple") main.appendChild(el("p", { text: "Select all that apply." }));
+      if (q.type === "multiple") {
+        card.appendChild(el("p", { class: "q-hint", text: "Select all that apply." }));
+      }
+      var choices = [];
       q.options.forEach(function (option) {
         var input = el("input", {
           type: q.type === "multiple" ? "checkbox" : "radio",
@@ -180,36 +186,43 @@
           value: String(option.id)
         });
         input.checked = a.options.indexOf(option.id) !== -1;
+        var label = el("label", { class: "option" + (input.checked ? " is-selected" : "") }, [
+          input,
+          el("span", { text: option.text })
+        ]);
+        choices.push({ input: input, label: label });
         input.addEventListener("change", function () {
           onOptionChange(q, option.id, input.checked);
+          choices.forEach(function (choice) {
+            choice.label.classList.toggle("is-selected", choice.input.checked);
+          });
         });
-        main.appendChild(el("p", {}, [
-          el("label", {}, [input, document.createTextNode(" " + option.text)])
-        ]));
+        card.appendChild(label);
       });
     }
 
     var marked = el("input", { type: "checkbox" });
     marked.checked = a.marked;
     marked.addEventListener("change", function () { onMarkedChange(q, marked.checked); });
-    main.appendChild(el("p", {}, [
-      el("label", {}, [marked, document.createTextNode(" Mark for review")])
+    card.appendChild(el("label", { class: "mark-toggle" }, [
+      marked,
+      el("span", { text: "Mark for review" })
     ]));
 
     var isLast = current === questions.length - 1;
-    main.appendChild(el("p", {}, [
+    card.appendChild(el("div", { class: "q-nav" }, [
       el("button", {
-        type: "button", text: "\u2190 Previous", disabled: current === 0,
+        type: "button", class: "btn", text: "\u2190 Previous", disabled: current === 0,
         onclick: function () { goTo(current - 1); }
       }),
-      document.createTextNode(" "),
+      el("button", { type: "button", class: "btn btn-ghost", text: "Clear answer", onclick: function () { clearAnswer(q); } }),
+      el("span", { class: "spacer" }),
       el("button", {
-        type: "button", text: isLast ? "Review \u2192" : "Next \u2192",
+        type: "button", class: "btn btn-primary", text: isLast ? "Review \u2192" : "Next \u2192",
         onclick: function () { if (isLast) showReview(); else goTo(current + 1); }
-      }),
-      document.createTextNode(" "),
-      el("button", { type: "button", text: "Clear answer", onclick: function () { clearAnswer(q); } })
+      })
     ]));
+    main.appendChild(card);
   }
 
   function renderReview() {
@@ -221,36 +234,47 @@
       if (answers[q.id].marked) marked++;
     });
 
-    main.appendChild(el("h2", { text: "Review your answers" }));
-    main.appendChild(el("p", {
-      text: "Answered: " + answered + " | Not answered: " + (questions.length - answered) +
-            " | Marked for review: " + marked
-    }));
+    var card = el("div", { class: "card" });
+    card.appendChild(el("h2", { class: "review-title", text: "Review your answers" }));
+    card.appendChild(el("p", { class: "review-summary" }, [
+      el("span", { class: "badge badge-success", text: answered + " answered" }),
+      document.createTextNode(" "),
+      el("span", { class: "badge badge-warning", text: (questions.length - answered) + " not answered" }),
+      document.createTextNode(" "),
+      el("span", { class: "badge badge-primary", text: marked + " marked for review" })
+    ]));
 
-    var table = el("table", { border: "1", cellpadding: "6" });
+    var table = el("table", { class: "review-table" });
     table.appendChild(el("tr", {}, [
       el("th", { text: "Q" }), el("th", { text: "Question" }), el("th", { text: "Status" }),
-      el("th", { text: "Marked for review" }), el("th")
+      el("th", { text: "Review flag" }), el("th")
     ]));
     questions.forEach(function (q, index) {
       var shortText = q.text.length > 60 ? q.text.slice(0, 60) + "..." : q.text;
+      var isDone = isAnswered(q);
       table.appendChild(el("tr", {}, [
         el("td", { text: String(index + 1) }),
         el("td", { text: shortText }),
-        el("td", { text: isAnswered(q) ? "Answered" : "Not answered" }),
-        el("td", { text: answers[q.id].marked ? "Marked" : "\u2013" }),
+        el("td", {}, [el("span", {
+          class: "badge " + (isDone ? "badge-success" : "badge-warning"),
+          text: isDone ? "Answered" : "Not answered"
+        })]),
+        el("td", {}, [answers[q.id].marked
+          ? el("span", { class: "badge badge-primary", text: "Marked" })
+          : document.createTextNode("\u2013")]),
         el("td", {}, [
-          el("button", { type: "button", text: "Go to question", onclick: function () { goTo(index); } })
+          el("button", { type: "button", class: "btn btn-sm", text: "Go to question", onclick: function () { goTo(index); } })
         ])
       ]));
     });
-    main.appendChild(table);
+    card.appendChild(table);
 
-    main.appendChild(el("p", {}, [
-      el("button", { type: "button", text: "\u2190 Back to questions", onclick: function () { goTo(current); } }),
-      document.createTextNode(" "),
-      el("button", { type: "button", text: "Submit exam", onclick: submitExam })
+    card.appendChild(el("div", { class: "q-nav" }, [
+      el("button", { type: "button", class: "btn", text: "\u2190 Back to questions", onclick: function () { goTo(current); } }),
+      el("span", { class: "spacer" }),
+      el("button", { type: "button", class: "btn btn-primary", text: "Submit exam", onclick: submitExam })
     ]));
+    main.appendChild(card);
   }
 
   function refreshPalette() {
@@ -270,17 +294,25 @@
 
   function buildSide() {
     var layout = side.parentNode;
+    side.classList.add("side-card");
     timerEl = el("p", { class: "timer", text: "--:--" });
     statusEl = el("p", { class: "save-status", "aria-live": "polite" });
     paletteEl = el("div", { class: "pal-grid" });
 
     // the timer, save status and Review button stay visible when the panel is collapsed
     var body = el("div", { class: "side-body" }, [
-      el("p", { text: "Questions" }),
+      el("h3", { class: "side-heading", text: "Questions" }),
       paletteEl,
-      el("p", { text: "Green: answered. Orange outline: marked for review." })
+      el("div", { class: "legend" }, [
+        el("span", {}, [el("i", { class: "dot dot-answered" }), document.createTextNode("Answered")]),
+        el("span", {}, [el("i", { class: "dot dot-marked" }), document.createTextNode("Marked")]),
+        el("span", {}, [el("i", { class: "dot" }), document.createTextNode("Not answered")])
+      ])
     ]);
-    var toggle = el("button", { type: "button", "aria-expanded": "true", text: "Hide panel \u25B8" });
+    var toggle = el("button", {
+      type: "button", class: "btn btn-ghost btn-sm btn-block", "aria-expanded": "true",
+      text: "Hide panel \u25B8"
+    });
     toggle.addEventListener("click", function () {
       var collapsed = layout.classList.toggle("panel-collapsed");
       body.hidden = collapsed;
@@ -288,10 +320,12 @@
       toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     });
 
-    side.appendChild(el("p", { text: "Time left" }));
-    side.appendChild(timerEl);
+    side.appendChild(el("div", { class: "timer-box" }, [
+      el("span", { class: "timer-label", text: "Time left" }),
+      timerEl
+    ]));
     side.appendChild(statusEl);
-    side.appendChild(el("button", { type: "button", text: "Review page", onclick: showReview }));
+    side.appendChild(el("button", { type: "button", class: "btn btn-primary btn-block", text: "Review page", onclick: showReview }));
     side.appendChild(toggle);
     side.appendChild(body);
   }
@@ -321,20 +355,10 @@
 
   // In-page confirm box. The browser's own confirm() can steal focus or leave
   // fullscreen, and that would be counted as a violation.
+  // In-page confirm box shared with the rest of the site. The browser's own confirm()
+  // can steal focus or leave fullscreen, and that would be counted as a violation.
   function confirmDialog(message, confirmText, onConfirm) {
-    var cancel = el("button", { type: "button", text: "Cancel" });
-    var ok = el("button", { type: "button", text: confirmText });
-    var overlay = el("div", { class: "modal-overlay" }, [
-      el("div", { class: "modal-box", role: "dialog", "aria-modal": "true" }, [
-        el("p", { text: message }),
-        el("p", {}, [cancel, document.createTextNode(" "), ok])
-      ])
-    ]);
-    function close() { overlay.remove(); }
-    cancel.addEventListener("click", close);
-    ok.addEventListener("click", function () { close(); onConfirm(); });
-    document.body.appendChild(overlay);
-    cancel.focus();
+    window.ExamBitUI.confirm(message, confirmText, onConfirm);
   }
 
   function submitExam() {
@@ -360,6 +384,7 @@
   function tick() {
     var left = Math.max(0, remaining - Math.floor((performance.now() - startedAt) / 1000));
     timerEl.textContent = formatTime(left);
+    timerEl.classList.toggle("timer-low", left <= 300);
     if (left === 0) doSubmit();
   }
 
@@ -379,6 +404,10 @@
     });
     current = 0;
     view = "question";
+    try {
+      var savedIndex = parseInt(sessionStorage.getItem("exambit-q-" + data.attemptId), 10);
+      if (savedIndex >= 0 && savedIndex < questions.length) current = savedIndex;
+    } catch (error) { /* storage can be blocked: start at question 1 */ }
     dirty = {};
     saveChain = Promise.resolve();
     textTimer = null;

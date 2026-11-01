@@ -50,6 +50,9 @@ class Exam(db.Model):
     is_published = db.Column(db.Boolean, default=False, nullable=False)
     course = db.Column(db.String(20))             # empty = open to all courses
     admission_session = db.Column(db.String(20))  # empty = open to all sessions
+    show_answers = db.Column(
+        db.Boolean, default=False, server_default=db.text("false"), nullable=False
+    )  # show correct answers to students once the exam window has closed
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow)
 
     questions = db.relationship(

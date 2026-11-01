@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Add question: {{ type_label }}</h1>
 <p>Exam: {{ exam.title }}</p>
+<p><a class="btn btn-ghost btn-sm" href="{{ url_for('teacher.question_new', exam_id=exam.id) }}">&larr; Change question type</a></p>
 <form method="post">
   <input type="hidden" name="type" value="{{ qtype }}">
   <p>
@@ -32,7 +33,7 @@
     <p>Short-answer questions have no options. You grade them yourself after the exam.</p>
   {% endif %}
 
-  <p><button type="submit">Save question</button></p>
+  <p><button type="submit" class="btn btn-primary">Save question</button></p>
 </form>
 <p><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Cancel</a></p>
 {% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}My answers - {{ exam.title }}{% endblock %}
+{% block content %}
+<p><a class="btn btn-ghost btn-sm" href="{{ url_for('student.result', attempt_id=attempt.id) }}">&larr; Back to result</a></p>
+
+<div class="page-head">
+  <div>
+    <h1>{{ exam.title }}</h1>
+    <p class="muted">Your answers and marks</p>
+  </div>
+  <span class="score-pill">{{ '%g'|format(earned) }} / {{ '%g'|format(total) }}{{ ' so far' if pending else '' }}</span>
+</div>
+
+{% if pending %}
+  <p class="alert">{{ pending }} short answer{{ '' if pending == 1 else 's' }} not graded yet. Those marks will be added after your teacher grades them.</p>
+{% endif %}
+{% if show_answers and not reveal %}
+  <p class="alert">Correct answers will be shown after the exam window closes on {{ exam.end_time|localdt }} (IST).</p>
+{% endif %}
+
+{% for row in rows %}
+<article class="card answer-card is-{{ row.status }}">
+  <div class="answer-head">
+    <span class="q-count">Question {{ row.number }} &middot; {{ row.type_label }}</span>
+    {% if row.status == 'pending' %}
+      <span class="badge badge-warning">Awaiting grading</span>
+    {% else %}
+      <span class="badge {{ 'badge-success' if row.status == 'correct' else 'badge-warning' if row.status == 'partial' else 'badge-danger' }}">
+        {{ '%g'|format(row.awarded) }} / {{ '%g'|format(row.question.marks) }}
+        {% if row.status == 'unanswered' %}&middot; not answered{% endif %}
+      </span>
+    {% endif %}
+  </div>
+  <p class="q-text">{{ row.question.text }}</p>
+
+  <div class="answer-line">
+    <strong>Your answer</strong>
+    {% if row.question.qtype == 'short' %}
+      {% if row.text %}<blockquote class="pre-wrap">{{ row.text }}</blockquote>{% else %}<span class="muted">No answer</span>{% endif %}
+    {% else %}
+      {% if row.chosen %}{{ row.chosen|join(', ') }}{% else %}<span class="muted">No answer</span>{% endif %}
+    {% endif %}
+  </div>
+
+  {% if reveal and row.correct is defined %}
+  <div class="answer-line">
+    <strong>Correct answer</strong>
+    {{ row.correct|join(', ') }}
+  </div>
+  {% endif %}
+</article>
+{% endfor %}
+{% endblock %}

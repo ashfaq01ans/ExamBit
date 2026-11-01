@@ -1,52 +1,114 @@
-/* Basic layout for the exam screen. Full styling comes later. */
-[hidden] { display: none !important; }
+/* Exam screen and system check. Shared look comes from style.css. */
+.exam-title { margin-bottom: 1rem; }
 
 .exam-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 1.5rem;
-  align-items: start;
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.25rem; align-items: start;
 }
+.exam-layout.panel-collapsed { grid-template-columns: minmax(0, 1fr) 190px; }
 
-.q-text { white-space: pre-wrap; }
-.answer-text { width: 100%; box-sizing: border-box; }
+/* question card */
+.q-card { padding: 1.5rem 1.75rem; }
+.q-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.q-count { font-size: 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.q-text { font-size: 1.15rem; line-height: 1.6; white-space: pre-wrap; margin: 0 0 1.25rem; }
+.q-hint { color: var(--muted); font-size: 0.9rem; margin: -0.5rem 0 0.8rem; }
 
-.timer { font-size: 1.6rem; font-weight: 700; margin: 0.2rem 0; }
-.save-status { min-height: 1.2em; font-size: 0.9rem; }
+.option {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.85rem 1rem; margin: 0 0 0.6rem;
+  background: #fff; border: 1.5px solid var(--border); border-radius: 10px;
+  cursor: pointer; transition: border-color 0.12s, background-color 0.12s;
+}
+.option:hover { border-color: var(--primary); background: #f7f9ff; }
+.option.is-selected { border-color: var(--primary); background: var(--primary-soft); }
+.option input { flex: none; margin: 0.2rem 0 0; }
+
+.answer-text { max-width: none; min-height: 180px; }
+
+.mark-toggle {
+  display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem; border: 1px solid var(--border-strong); border-radius: 999px;
+  font-size: 0.9rem; cursor: pointer; background: #fff;
+}
+.mark-toggle input { margin: 0; }
+
+.q-nav {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
+}
+.q-nav .spacer { flex: 1; }
+.review-title { margin: 0 0 0.6rem; }
+.review-summary { margin: 0 0 1rem; }
+
+/* side panel */
+.side-card {
+  position: sticky; top: 76px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.1rem; box-shadow: var(--shadow);
+}
+.timer-box { text-align: center; padding: 0.75rem; background: var(--primary-soft); border-radius: 10px; }
+.timer-label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--primary-hover); }
+.timer { margin: 0; font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--primary-hover); }
+.timer.timer-low { color: var(--danger); }
+.save-status { min-height: 1.3em; margin: 0.6rem 0; font-size: 0.85rem; color: var(--muted); text-align: center; }
+.side-heading { margin: 1rem 0 0.4rem; font-size: 0.95rem; }
+.side-card .btn-block + .btn-block { margin-top: 0.4rem; }
 
 .pal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
-.pal-btn { padding: 0.4rem 0; cursor: pointer; }
-.pal-btn.answered { background: #d6f5d6; }
-.pal-btn.marked { outline: 2px solid #e08a00; }
-.pal-btn.current { font-weight: 700; border: 2px solid #000; }
+.pal-btn { padding: 0.45rem 0; font-size: 0.9rem; border-radius: 8px; background: #fff; border: 1px solid var(--border-strong); }
+.pal-btn.answered { background: var(--success-soft); border-color: #86c79a; color: var(--success); }
+.pal-btn.marked { box-shadow: 0 0 0 2px #e08a00 inset; }
+.pal-btn.current, .pal-btn.current:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
 
-/* camera preview in the corner */
+.legend { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; margin-top: 0.7rem; font-size: 0.8rem; color: var(--muted); }
+.dot { display: inline-block; width: 0.7rem; height: 0.7rem; margin-right: 0.3rem; vertical-align: -1px; background: #fff; border: 1px solid var(--border-strong); border-radius: 3px; }
+.dot-answered { background: var(--success-soft); border-color: #86c79a; }
+.dot-marked { border-color: #e08a00; box-shadow: 0 0 0 2px #e08a00 inset; }
+
+/* camera in the corner */
 .cam-corner {
-  position: fixed; right: 12px; bottom: 12px;
-  width: 180px; height: 135px;
-  object-fit: cover; background: #000;
-  border: 2px solid #333; z-index: 50;
+  position: fixed; right: 16px; bottom: 16px; width: 190px; height: 142px;
+  object-fit: cover; background: #0f172a; border: 3px solid #fff; border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.3); z-index: 50; transform: scaleX(-1);
 }
 
-/* blocks the exam until the student fixes fullscreen, screen share or camera */
+/* blocks the exam until fullscreen, screen share or camera is back */
 .overlay {
-  position: fixed; inset: 0; z-index: 100;
-  background: rgba(255, 255, 255, 0.97);
-  display: flex; align-items: center; justify-content: center; text-align: center;
+  position: fixed; inset: 0; z-index: 100; padding: 1rem;
+  background: rgba(16, 24, 40, 0.88);
+  display: flex; align-items: center; justify-content: center;
 }
-.overlay-box { max-width: 420px; padding: 1rem; }
+.overlay-box { width: 100%; max-width: 440px; padding: 1.75rem; background: #fff; border-radius: 14px; text-align: center; }
+.overlay-box p { margin-top: 0; font-size: 1.05rem; }
 
-/* violation warning banner */
+/* violation banner */
 .warning {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 90;
-  margin: 0; padding: 0.6rem; text-align: center;
-  background: #b00020; color: #fff;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 90; margin: 0; padding: 0.7rem 1rem;
+  text-align: center; font-weight: 600; background: var(--danger); color: #fff;
 }
 
-.exam-layout.panel-collapsed { grid-template-columns: minmax(0, 1fr) 150px; }
-.side-body { margin-top: 0.8rem; }
-
-@media (max-width: 700px) {
-  .exam-layout { grid-template-columns: 1fr; }
+/* system check */
+.gate { max-width: 760px; margin: 0 auto; }
+.gate h2 { margin-top: 0; }
+.steps { list-style: none; padding: 0; margin: 1rem 0; }
+.step { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; margin-bottom: 0.75rem; }
+.step-num {
+  flex: none; display: grid; place-items: center; width: 2.2rem; height: 2.2rem;
+  border-radius: 50%; background: var(--primary-soft); color: var(--primary-hover); font-weight: 700;
 }
+.step-body { flex: 1; }
+.step-body h3 { margin: 0 0 0.15rem; }
+.step-body p { margin: 0; }
+.step-action { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.75rem; }
+.step-status.is-done { background: var(--success-soft); color: var(--success); }
 
+@media (max-width: 900px) {
+  .exam-layout, .exam-layout.panel-collapsed { grid-template-columns: 1fr; }
+  .side-card { position: static; }
+  .step { flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .q-card { padding: 1.1rem; }
+  .cam-corner { width: 120px; height: 90px; }
+}

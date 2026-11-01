@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Register - ExamBit{% endblock %}
 {% block content %}
-<div class="card auth-card">
+<div class="auth-split">
+{% include "auth/_hero.html" %}
+<section class="auth-form">
 <h1>Create your account</h1>
 <p class="muted">Students pick their course and admission session.</p>
 <form method="post">
@@ -64,6 +66,7 @@
   <p><button type="submit" class="btn btn-primary btn-block">Create account</button></p>
 </form>
 <p class="muted auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+</section>
 </div>
 {% endblock %}
 {% block scripts %}

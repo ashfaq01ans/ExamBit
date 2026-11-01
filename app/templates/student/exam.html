@@ -4,15 +4,15 @@
 <link rel="stylesheet" href="{{ static_v('css/exam.css') }}">
 {% endblock %}
 {% block content %}
-<h1>{{ exam.title }}</h1>
-<noscript><p>JavaScript is required to take this exam.</p></noscript>
+<h1 class="exam-title">{{ exam.title }}</h1>
+<noscript><p class="alert">JavaScript is required to take this exam.</p></noscript>
 
-<section id="gate">
+<section id="gate" class="gate">
   <h2>System check</h2>
   {% if resume %}
-    <p><strong>You already started this exam and your timer is running. Finish the checks to continue.</strong></p>
+    <p class="alert">You already started this exam and your timer is running. Finish the checks to continue.</p>
   {% else %}
-    <p>
+    <p class="muted">
       Your {{ exam.duration_minutes }} minutes start only when you click "Begin exam" at the end.
       Use Chrome or Edge on a laptop or desktop with a webcam.
     </p>
@@ -20,24 +20,48 @@
 
   <p id="gate-error" class="flash error" hidden></p>
 
-  <ol>
-    <li>
-      <label>
-        <input type="checkbox" id="consent">
-        I have read the rules and agree to be monitored: webcam snapshots, screen sharing
-        and activity tracking during the exam.
-      </label>
+  <ol class="steps">
+    <li class="step card">
+      <span class="step-num">1</span>
+      <div class="step-body">
+        <h3>Accept the rules</h3>
+        <label>
+          <input type="checkbox" id="consent">
+          I have read the rules and agree to be monitored: webcam snapshots, screen sharing and activity tracking.
+        </label>
+      </div>
     </li>
-    <li>
-      <button type="button" id="btn-camera">Enable camera</button>
-      <span id="status-camera">Not done</span>
+    <li class="step card">
+      <span class="step-num">2</span>
+      <div class="step-body">
+        <h3>Turn on your camera</h3>
+        <p class="muted">Your face must stay visible during the exam.</p>
+      </div>
+      <div class="step-action">
+        <span id="status-camera" class="badge step-status">Not done</span>
+        <button type="button" id="btn-camera" class="btn">Enable camera</button>
+      </div>
     </li>
-    <li>
-      <button type="button" id="btn-screen" disabled>Share entire screen</button>
-      <span id="status-screen">Not done</span>
+    <li class="step card">
+      <span class="step-num">3</span>
+      <div class="step-body">
+        <h3>Share your entire screen</h3>
+        <p class="muted">Choose "Entire screen", not a window or a tab.</p>
+      </div>
+      <div class="step-action">
+        <span id="status-screen" class="badge step-status">Not done</span>
+        <button type="button" id="btn-screen" class="btn" disabled>Share screen</button>
+      </div>
     </li>
-    <li>
-      <button type="button" id="btn-begin" disabled>Begin exam (enters fullscreen)</button>
+    <li class="step card">
+      <span class="step-num">4</span>
+      <div class="step-body">
+        <h3>Begin the exam</h3>
+        <p class="muted">The exam opens in fullscreen.</p>
+      </div>
+      <div class="step-action">
+        <button type="button" id="btn-begin" class="btn btn-primary" disabled>Begin exam</button>
+      </div>
     </li>
   </ol>
 </section>
@@ -52,7 +76,7 @@
 <div id="overlay" class="overlay" hidden>
   <div class="overlay-box">
     <p id="overlay-text"></p>
-    <button type="button" id="overlay-btn"></button>
+    <button type="button" id="overlay-btn" class="btn btn-primary"></button>
   </div>
 </div>
 

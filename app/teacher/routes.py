@@ -20,7 +20,7 @@ QUESTION_TYPES = {
 
 EXAM_FIELDS = (
     "title", "instructions", "duration_minutes", "start_time", "end_time",
-    "course", "admission_session",
+    "course", "admission_session", "show_answers",
 )
 
 
@@ -47,6 +47,7 @@ def values_from_exam(exam):
         "end_time": local_input(exam.end_time),
         "course": exam.course or "",
         "admission_session": exam.admission_session or "",
+        "show_answers": "1" if exam.show_answers else "",
     }
 
 
@@ -94,6 +95,7 @@ def validate_exam(values):
         "end_time": end,
         "course": course,
         "admission_session": admission_session,
+        "show_answers": values["show_answers"] == "1",
     }
     return parsed, errors
 

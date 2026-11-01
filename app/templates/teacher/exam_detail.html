@@ -21,12 +21,14 @@
   <p>
     <a href="{{ url_for('teacher.exam_edit', exam_id=exam.id) }}">Edit details</a>
     {% if exam.is_published %}
-      <form method="post" action="{{ url_for('teacher.exam_unpublish', exam_id=exam.id) }}" style="display:inline">
+      <form method="post" action="{{ url_for('teacher.exam_unpublish', exam_id=exam.id) }}" style="display:inline"
+            data-confirm="Unpublish this exam? Students will no longer see it." data-confirm-label="Unpublish">
         <button type="submit">Unpublish</button>
       </form>
     {% else %}
-      <form method="post" action="{{ url_for('teacher.exam_publish', exam_id=exam.id) }}" style="display:inline">
-        <button type="submit">Publish</button>
+      <form method="post" action="{{ url_for('teacher.exam_publish', exam_id=exam.id) }}" style="display:inline"
+            data-confirm="Publish '{{ exam.title }}' for {{ exam.course or 'all courses' }}, {{ exam.admission_session or 'all sessions' }}? Students will see it right away. You cannot change the exam once a student starts it." data-confirm-label="Publish">
+        <button type="submit" class="btn btn-primary">Publish</button>
       </form>
     {% endif %}
     <form method="post" action="{{ url_for('teacher.exam_delete', exam_id=exam.id) }}" style="display:inline"

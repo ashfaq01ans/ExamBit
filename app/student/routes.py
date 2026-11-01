@@ -22,6 +22,13 @@ bp = Blueprint("student", __name__, url_prefix="/student")
 # An answer sent a few seconds after the deadline (network delay) is still saved.
 GRACE_SECONDS = 10
 
+TYPE_LABELS = {
+    "single": "Single choice",
+    "multiple": "Multiple correct",
+    "truefalse": "True / False",
+    "short": "Short answer",
+}
+
 
 # ---------- helpers ----------
 
@@ -191,7 +198,7 @@ def build_payload(attempt):
 def dashboard():
     now = now_utc()
     exams = db.session.execute(
-        db.select(Exam).filter_by(is_published=True).order_by(Exam.start_time)
+        db.select(Exam).filter_by(is_published=True).order_by(Exam.start_time.desc())
     ).scalars().all()
     exams = [exam for exam in exams if is_eligible(exam)]
     attempts = {a.exam_id: a for a in current_user.attempts}
@@ -209,6 +216,8 @@ def dashboard():
             live.append((exam, None))
         else:
             past.append((exam, None))  # never attempted: missed
+
+    upcoming.sort(key=lambda row: row[0].start_time)  # next exam first
 
     return render_template(
         "student/dashboard.html",
@@ -417,6 +426,61 @@ def submit(attempt_id):
     if request.headers.get("X-Requested-With") == "fetch":
         return jsonify(ok=True, result_url=result_url)
     return redirect(result_url)
+
+
+@bp.route("/attempts/<int:attempt_id>/answers")
+@role_required("student")
+def answers_review(attempt_id):
+    """The student's own answers with marks. Correct answers are shown only if the
+    teacher turned that on, and only after the exam window has closed, so nobody
+    can pass them to classmates who have not taken the exam yet."""
+    attempt = get_attempt(attempt_id)
+    if attempt.status == "in_progress" and not expire_if_needed(attempt):
+        return redirect(url_for("student.exam_take", exam_id=attempt.exam_id))
+
+    exam = attempt.exam
+    reveal = bool(exam.show_answers) and now_utc() >= exam.end_time
+    answers = {a.question_id: a for a in attempt.answers}
+
+    rows = []
+    for number, question in enumerate(ordered_questions(attempt), start=1):
+        answer = answers.get(question.id)
+        options = sorted(question.options, key=lambda o: o.id)
+        row = {"number": number, "question": question, "type_label": TYPE_LABELS[question.qtype]}
+        if question.qtype == "short":
+            text = answer.text_answer if answer and answer.text_answer and answer.text_answer.strip() else None
+            row["text"] = text
+            row["chosen"] = None
+            given = bool(text)
+        else:
+            chosen_ids = set(answer.selected_option_ids or []) if answer else set()
+            row["text"] = None
+            row["chosen"] = [o.text for o in options if o.id in chosen_ids]
+            given = bool(row["chosen"])
+            if reveal:
+                row["correct"] = [o.text for o in options if o.is_correct]
+
+        awarded = answer.marks_awarded if answer else None
+        if not given:
+            status, awarded = "unanswered", 0
+        elif awarded is None:
+            status = "pending"
+        elif awarded >= question.marks:
+            status = "correct"
+        elif awarded > 0:
+            status = "partial"
+        else:
+            status = "wrong"
+        row["awarded"] = awarded
+        row["status"] = status
+        rows.append(row)
+
+    earned, pending = compute_totals(attempt)
+    return render_template(
+        "student/answers.html",
+        attempt=attempt, exam=exam, rows=rows, reveal=reveal, show_answers=bool(exam.show_answers),
+        earned=earned, pending=pending, total=sum(q.marks for q in exam.questions),
+    )
 
 
 @bp.route("/attempts/<int:attempt_id>/result")

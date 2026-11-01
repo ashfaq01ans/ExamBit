@@ -34,6 +34,8 @@
     $("btn-begin").disabled = !($("consent").checked && cameraReady && screenReady);
     $("status-camera").textContent = cameraReady ? "Camera on" : "Not done";
     $("status-screen").textContent = screenReady ? "Entire screen shared" : "Not done";
+    $("status-camera").classList.toggle("is-done", cameraReady);
+    $("status-screen").classList.toggle("is-done", screenReady);
   }
 
   function stopStream(stream) {

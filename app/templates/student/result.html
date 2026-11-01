@@ -1,23 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Result - {{ exam.title }}{% endblock %}
 {% block content %}
-<h1>{{ exam.title }}</h1>
-<p>
-  Status:
-  <strong>{{ 'Submitted' if attempt.status == 'submitted' else 'Auto-submitted' }}</strong><br>
-  Started: {{ attempt.started_at|localdt }} (IST)<br>
-  Submitted: {{ attempt.submitted_at|localdt }} (IST)
-</p>
+<div class="card score-card">
+  {% if attempt.status == 'submitted' %}
+    <span class="badge badge-success">Submitted</span>
+  {% else %}
+    <span class="badge badge-warning">Auto-submitted (time up or violations)</span>
+  {% endif %}
+  <h1>{{ exam.title }}</h1>
 
-{% if pending == 0 %}
-  <p>Score: <strong>{{ '%g'|format(earned) }} / {{ '%g'|format(total) }}</strong> ({{ percent }}%)</p>
-{% else %}
-  <p>
-    Marks so far: <strong>{{ '%g'|format(earned) }} / {{ '%g'|format(total) }}</strong>.
-    {{ pending }} short answer{{ '' if pending == 1 else 's' }} still waiting for your teacher to grade.
-    Your final score will appear here.
-  </p>
-{% endif %}
+  {% if pending == 0 %}
+    <div class="score-value">{{ '%g'|format(earned) }} <span class="score-total">/ {{ '%g'|format(total) }}</span></div>
+    <div class="progress" role="progressbar" aria-label="Score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ percent }}">
+      <span style="width: {{ percent }}%"></span>
+    </div>
+    <p class="muted">{{ percent }}%</p>
+  {% else %}
+    <div class="score-value">{{ '%g'|format(earned) }} <span class="score-total">/ {{ '%g'|format(total) }} so far</span></div>
+    <p class="alert">
+      {{ pending }} short answer{{ '' if pending == 1 else 's' }} still waiting for your teacher to grade.
+      Your final score will appear here.
+    </p>
+  {% endif %}
 
-<p><a href="{{ url_for('student.dashboard') }}">Back to dashboard</a></p>
+  <dl class="result-meta">
+    <div><dt>Started</dt><dd>{{ attempt.started_at|localdt }}</dd></div>
+    <div><dt>Submitted</dt><dd>{{ attempt.submitted_at|localdt }}</dd></div>
+  </dl>
+
+  <div class="btn-row">
+    <a class="btn btn-primary" href="{{ url_for('student.answers_review', attempt_id=attempt.id) }}">View my answers</a>
+    <a class="btn" href="{{ url_for('student.dashboard') }}">Back to dashboard</a>
+  </div>
+</div>
 {% endblock %}

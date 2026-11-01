@@ -1,48 +1,83 @@
 {% extends "base.html" %}
 {% block title %}Student Dashboard - ExamBit{% endblock %}
 {% block content %}
-<h1>Student Dashboard</h1>
-<p>Welcome, {{ current_user.name }}.</p>
-
-{% macro exam_table(rows, kind) %}
-<table border="1" cellpadding="6">
-  <tr><th>Exam</th><th>Window (IST)</th><th>Duration</th><th></th></tr>
-  {% for exam, attempt in rows %}
-  <tr>
-    <td>{{ exam.title }}</td>
-    <td>{{ exam.start_time|localdt }}<br>to {{ exam.end_time|localdt }}</td>
-    <td>{{ exam.duration_minutes }} min</td>
-    <td>
-      {% if kind == 'in_progress' %}
-        <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Continue</a>
-      {% elif kind == 'live' %}
-        <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Open</a>
-      {% elif kind == 'upcoming' %}
-        <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Details</a>
-      {% else %}
-        {% if attempt %}
-          {{ 'Submitted' if attempt.status == 'submitted' else 'Auto-submitted' }}
-          {% if attempt.score is not none %}| Score {{ '%g'|format(attempt.score) }}{% endif %}
-          - <a href="{{ url_for('student.result', attempt_id=attempt.id) }}">View</a>
-        {% else %}
-          Missed
-        {% endif %}
-      {% endif %}
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+{% macro exam_card(exam, attempt, kind) %}
+<article class="exam-card">
+  <div class="exam-card-top">
+    <h3>{{ exam.title }}</h3>
+    {% if kind == 'live' %}<span class="badge badge-success">Live now</span>
+    {% elif kind == 'in_progress' %}<span class="badge badge-warning">In progress</span>
+    {% elif kind == 'upcoming' %}<span class="badge badge-primary">Upcoming</span>
+    {% elif attempt %}
+      {% if attempt.status == 'submitted' %}<span class="badge badge-success">Submitted</span>
+      {% else %}<span class="badge badge-warning">Auto-submitted</span>{% endif %}
+    {% else %}<span class="badge badge-danger">Missed</span>{% endif %}
+  </div>
+  <dl class="meta">
+    <div><dt>Opens</dt><dd>{{ exam.start_time|localdt }}</dd></div>
+    <div><dt>Closes</dt><dd>{{ exam.end_time|localdt }}</dd></div>
+    <div><dt>Duration</dt><dd>{{ exam.duration_minutes }} min</dd></div>
+    {% if attempt and attempt.score is not none %}
+      <div><dt>Score</dt><dd>{{ '%g'|format(attempt.score) }} / {{ '%g'|format(exam.questions|sum(attribute='marks')) }}</dd></div>
+    {% endif %}
+  </dl>
+  <div class="exam-card-actions">
+    {% if kind == 'in_progress' %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Continue exam</a>
+    {% elif kind == 'live' %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Open exam</a>
+    {% elif kind == 'upcoming' %}
+      <a class="btn btn-sm" href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Details</a>
+    {% elif attempt %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('student.result', attempt_id=attempt.id) }}">View result</a>
+      <a class="btn btn-sm" href="{{ url_for('student.answers_review', attempt_id=attempt.id) }}">View answers</a>
+    {% else %}
+      <a class="btn btn-sm" href="{{ url_for('student.exam_detail', exam_id=exam.id) }}">Details</a>
+    {% endif %}
+  </div>
+</article>
 {% endmacro %}
 
-<h2>In progress</h2>
-{% if in_progress %}{{ exam_table(in_progress, 'in_progress') }}{% else %}<p>None.</p>{% endif %}
+<div class="page-head">
+  <div>
+    <h1>Hi, {{ current_user.name }}</h1>
+    {% if current_user.course %}
+      <p class="muted">{{ current_user.course }} &middot; {{ current_user.admission_session }}</p>
+    {% endif %}
+  </div>
+</div>
 
-<h2>Live now</h2>
-{% if live %}{{ exam_table(live, 'live') }}{% else %}<p>No exams are open right now.</p>{% endif %}
+{% if in_progress %}
+<section class="dash-section">
+  <h2>In progress</h2>
+  <div class="exam-grid">{% for exam, attempt in in_progress %}{{ exam_card(exam, attempt, 'in_progress') }}{% endfor %}</div>
+</section>
+{% endif %}
 
-<h2>Upcoming</h2>
-{% if upcoming %}{{ exam_table(upcoming, 'upcoming') }}{% else %}<p>No upcoming exams.</p>{% endif %}
+<section class="dash-section">
+  <h2>Live now</h2>
+  {% if live %}
+    <div class="exam-grid">{% for exam, attempt in live %}{{ exam_card(exam, attempt, 'live') }}{% endfor %}</div>
+  {% else %}
+    <p class="empty">No exams are open right now.</p>
+  {% endif %}
+</section>
 
-<h2>Past exams</h2>
-{% if past %}{{ exam_table(past, 'past') }}{% else %}<p>No past exams yet.</p>{% endif %}
+<section class="dash-section">
+  <h2>Upcoming</h2>
+  {% if upcoming %}
+    <div class="exam-grid">{% for exam, attempt in upcoming %}{{ exam_card(exam, attempt, 'upcoming') }}{% endfor %}</div>
+  {% else %}
+    <p class="empty">No upcoming exams.</p>
+  {% endif %}
+</section>
+
+<section class="dash-section">
+  <h2>Past exams</h2>
+  {% if past %}
+    <div class="exam-grid">{% for exam, attempt in past %}{{ exam_card(exam, attempt, 'past') }}{% endfor %}</div>
+  {% else %}
+    <p class="empty">Exams you have taken will appear here.</p>
+  {% endif %}
+</section>
 {% endblock %}

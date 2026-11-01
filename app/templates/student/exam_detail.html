@@ -1,61 +1,78 @@
 {% extends "base.html" %}
 {% block title %}{{ exam.title }} - ExamBit{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('student.dashboard') }}">&larr; Back to dashboard</a></p>
-<h1>{{ exam.title }}</h1>
+<p><a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">&larr; Back to dashboard</a></p>
 
-<p>
-  Window (IST): {{ exam.start_time|localdt }} to {{ exam.end_time|localdt }}<br>
-  Duration: {{ exam.duration_minutes }} minutes<br>
-  Questions: {{ exam.questions|length }}<br>
-  Total marks: {{ exam.questions|sum(attribute='marks') }}
-</p>
+<div class="page-head">
+  <div>
+    <h1>{{ exam.title }}</h1>
+    <p class="muted">Open from {{ exam.start_time|localdt }} to {{ exam.end_time|localdt }} (IST)</p>
+  </div>
+  {% if state == 'live' %}<span class="badge badge-success">Live now</span>
+  {% elif state == 'in_progress' %}<span class="badge badge-warning">In progress</span>
+  {% elif state == 'upcoming' %}<span class="badge badge-primary">Upcoming</span>
+  {% elif state == 'finished' %}<span class="badge">Completed</span>
+  {% else %}<span class="badge badge-danger">Missed</span>{% endif %}
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="stat-label">Duration</span><span class="stat-value">{{ exam.duration_minutes }} min</span></div>
+  <div class="stat"><span class="stat-label">Questions</span><span class="stat-value">{{ exam.questions|length }}</span></div>
+  <div class="stat"><span class="stat-label">Total marks</span><span class="stat-value">{{ '%g'|format(exam.questions|sum(attribute='marks')) }}</span></div>
+</div>
 
 {% if exam.instructions %}
-<h2>Instructions from your teacher</h2>
-<p>{{ exam.instructions }}</p>
+<div class="card">
+  <h2>Instructions from your teacher</h2>
+  <p class="pre-wrap">{{ exam.instructions }}</p>
+</div>
 {% endif %}
 
 {% if state == 'live' or state == 'in_progress' %}
-  <h2>Exam rules</h2>
-  <ul>
-    <li>You can attempt this exam only once.</li>
-    <li>The timer runs on the server. It cannot be paused, even if you close the page.</li>
-    <li>The exam is submitted automatically when time runs out.</li>
-    <li>Your camera must stay on and your entire screen must stay shared for the whole exam.</li>
-    <li>The exam runs in fullscreen. Use a laptop or desktop with Chrome or Edge.</li>
-    <li>Answers are saved automatically while you work.</li>
-  </ul>
+  <div class="rules-grid">
+    <div class="card">
+      <h2>Exam rules</h2>
+      <ul class="rule-list">
+        <li>You can attempt this exam only once.</li>
+        <li>The timer runs on the server. It cannot be paused, even if you close the page.</li>
+        <li>The exam is submitted automatically when time runs out.</li>
+        <li>Keep your camera on and your entire screen shared for the whole exam.</li>
+        <li>The exam runs in fullscreen. Use a laptop or desktop with Chrome or Edge.</li>
+        <li>Answers are saved automatically while you work.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Not allowed</h2>
+      <p class="muted">Each of these is a violation. At 10 violations your exam is submitted automatically, and every violation lowers your integrity score.</p>
+      <ul class="rule-list no">
+        <li>Switching to another tab or window</li>
+        <li>Leaving fullscreen mode</li>
+        <li>Right-clicking</li>
+        <li>Stopping screen sharing</li>
+        <li>Turning off the camera</li>
+      </ul>
+      <p class="muted">Copy, cut and paste are blocked. Help from other people or devices is not allowed.</p>
+    </div>
+  </div>
 
-  <h2>Prohibited actions</h2>
-  <p>
-    The following are recorded as violations. Reaching 10 violations submits your exam
-    automatically, and every violation lowers your integrity score.
+  <p class="cta">
+    {% if state == 'live' %}
+      <a class="btn btn-primary" href="{{ url_for('student.exam_take', exam_id=exam.id) }}">Continue to system check</a>
+    {% else %}
+      <a class="btn btn-primary" href="{{ url_for('student.exam_take', exam_id=exam.id) }}">Continue exam</a>
+    {% endif %}
   </p>
-  <ul>
-    <li>Switching to another tab or window</li>
-    <li>Leaving fullscreen mode</li>
-    <li>Right-clicking</li>
-    <li>Stopping screen sharing</li>
-    <li>Turning off the camera</li>
-  </ul>
-  <p>
-    Copying, cutting and pasting are also not allowed. Getting help from other people or
-    devices, or covering the camera, is not allowed.
-  </p>
-
-  {% if state == 'live' %}
-    <p><a href="{{ url_for('student.exam_take', exam_id=exam.id) }}">Continue to system check</a></p>
-  {% else %}
-    <p>You have already started this exam.</p>
-    <p><a href="{{ url_for('student.exam_take', exam_id=exam.id) }}">Continue exam</a></p>
-  {% endif %}
 {% elif state == 'finished' %}
-  <p>You have completed this exam.</p>
-  <p><a href="{{ url_for('student.result', attempt_id=attempt.id) }}">View result</a></p>
+  <div class="card">
+    <p>You have completed this exam.</p>
+    <div class="btn-row" style="justify-content:flex-start">
+      <a class="btn btn-primary" href="{{ url_for('student.result', attempt_id=attempt.id) }}">View result</a>
+      <a class="btn" href="{{ url_for('student.answers_review', attempt_id=attempt.id) }}">View my answers</a>
+    </div>
+  </div>
 {% elif state == 'upcoming' %}
-  <p>This exam opens on {{ exam.start_time|localdt }} (IST).</p>
+  <p class="alert">This exam opens on {{ exam.start_time|localdt }} (IST).</p>
 {% else %}
-  <p>This exam is closed. You did not attempt it.</p>
+  <p class="alert">This exam is closed. You did not attempt it.</p>
 {% endif %}
 {% endblock %}
