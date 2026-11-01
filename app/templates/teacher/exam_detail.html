@@ -30,7 +30,7 @@
       </form>
     {% endif %}
     <form method="post" action="{{ url_for('teacher.exam_delete', exam_id=exam.id) }}" style="display:inline"
-          onsubmit="return confirm('Delete this exam and all its questions?');">
+          data-confirm="Delete this exam and all its questions?" data-confirm-label="Delete exam">
       <button type="submit">Delete exam</button>
     </form>
   </p>
@@ -61,7 +61,7 @@
     {% if not locked %}
       <form method="post"
             action="{{ url_for('teacher.question_delete', exam_id=exam.id, question_id=question.id) }}"
-            onsubmit="return confirm('Delete this question?');">
+            data-confirm="Delete this question?" data-confirm-label="Delete question">
         <button type="submit">Delete question</button>
       </form>
     {% endif %}

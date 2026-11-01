@@ -85,7 +85,7 @@
 {% if snapshots %}
   {% if attempt.status != 'in_progress' %}
   <form method="post" action="{{ url_for('teacher.snapshots_delete', attempt_id=attempt.id) }}"
-        onsubmit="return confirm('Delete all snapshots of this attempt? This cannot be undone.');">
+        data-confirm="Delete all snapshots of this attempt? This cannot be undone." data-confirm-label="Delete snapshots">
     <p><button type="submit">Delete snapshots</button></p>
   </form>
   {% endif %}

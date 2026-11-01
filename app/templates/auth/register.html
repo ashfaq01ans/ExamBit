@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Register - ExamBit{% endblock %}
 {% block content %}
-<h1>Register</h1>
+<div class="card auth-card">
+<h1>Create your account</h1>
+<p class="muted">Students pick their course and admission session.</p>
 <form method="post">
   <p>
     <label for="name">Name</label><br>
@@ -59,10 +61,11 @@
       </select>
     </p>
   </div>
-  <p><button type="submit">Create account</button></p>
+  <p><button type="submit" class="btn btn-primary btn-block">Create account</button></p>
 </form>
-<p>Already registered? <a href="{{ url_for('auth.login') }}">Login</a></p>
+<p class="muted auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+</div>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+<script src="{{ static_v('js/register.js') }}"></script>
 {% endblock %}

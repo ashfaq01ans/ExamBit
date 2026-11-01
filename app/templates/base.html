@@ -4,30 +4,63 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ExamBit{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta name="description" content="ExamBit is an online examination system with automatic grading and built-in proctoring.">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="{{ static_v('img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ static_v('img/favicon-32.png') }}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ static_v('img/apple-touch-icon.png') }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ExamBit">
+  <meta property="og:title" content="ExamBit - Online examination system">
+  <meta property="og:description" content="Timed online exams with camera, screen and tab monitoring, and automatic grading.">
+  <meta property="og:image" content="{{ url_for('static', filename='img/og-image.png', _external=True) }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="{{ static_v('css/style.css') }}">
   {% block head %}{% endblock %}
-  <script src="{{ url_for('static', filename='js/password-toggle.js') }}" defer></script>
+  <script src="{{ static_v('js/password-toggle.js') }}" defer></script>
+  <script src="{{ static_v('js/ui.js') }}" defer></script>
 </head>
 <body>
-  <nav>
-    <a href="{{ url_for('index') }}">ExamBit</a>
-    {% if current_user.is_authenticated %}
-      <span>{{ current_user.name }} ({{ current_user.role }})</span>
-      <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
-        <button type="submit">Logout</button>
-      </form>
-    {% else %}
-      <a href="{{ url_for('auth.login') }}">Login</a>
-      <a href="{{ url_for('auth.register') }}">Register</a>
-    {% endif %}
-  </nav>
-  <hr>
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-      <p class="flash {{ category }}">{{ message }}</p>
-    {% endfor %}
-  {% endwith %}
-  {% block content %}{% endblock %}
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{{ url_for('index') }}">
+        <img src="{{ static_v('img/logo.svg') }}" width="32" height="32" alt="">
+        <span>Exam<b>Bit</b></span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        {% if current_user.is_authenticated %}
+          <span class="nav-user">
+            <span class="nav-name">{{ current_user.name }}</span>
+            <span class="badge badge-primary">{{ current_user.role }}</span>
+          </span>
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}">Log in</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <div id="toasts" class="toasts" aria-live="polite">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="toast toast-{{ category if category in ('success', 'error') else 'info' }}" role="status">
+          <span class="toast-text">{{ message }}</span>
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <main id="main" class="container">
+    {% block content %}{% endblock %}
+  </main>
   {% block scripts %}{% endblock %}
 </body>
 </html>

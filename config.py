@@ -1,4 +1,6 @@
 import os
+from datetime import timedelta
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,3 +35,5 @@ class Config:
     SESSION_COOKIE_SECURE = ON_RENDER      # send the login cookie over HTTPS only when hosted
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    BEHIND_PROXY = ON_RENDER               # trust Render's proxy headers (correct https links)
+    SEND_FILE_MAX_AGE_DEFAULT = timedelta(days=30)  # asset URLs carry a version, so this is safe

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ exam.title }} - ExamBit{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/exam.css') }}">
+<link rel="stylesheet" href="{{ static_v('css/exam.css') }}">
 {% endblock %}
 {% block content %}
 <h1>{{ exam.title }}</h1>
@@ -59,6 +59,6 @@
 <script id="boot-data" type="application/json">{{ boot|tojson }}</script>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/exam-runner.js') }}"></script>
-<script src="{{ url_for('static', filename='js/proctor.js') }}"></script>
+<script src="{{ static_v('js/exam-runner.js') }}"></script>
+<script src="{{ static_v('js/proctor.js') }}"></script>
 {% endblock %}
