@@ -1,28 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Teacher Dashboard - ExamBit{% endblock %}
 {% block content %}
-<h1>Teacher Dashboard</h1>
-<p>Welcome, {{ current_user.name }}.</p>
-<p><a href="{{ url_for('teacher.exam_new') }}">+ Create new exam</a></p>
+<div class="page-head">
+  <div>
+    <h1>Hi, {{ current_user.name }}</h1>
+    <p class="muted">Create exams, grade answers and review proctoring reports.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('teacher.exam_new') }}">+ Create exam</a>
+</div>
 
 {% if exams %}
-<table border="1" cellpadding="6">
-  <tr>
-    <th>Title</th><th>For</th><th>Window (IST)</th><th>Duration</th><th>Questions</th><th>Status</th><th></th>
-  </tr>
+<div class="exam-grid">
   {% for exam in exams %}
-  <tr>
-    <td>{{ exam.title }}</td>
-    <td>{{ exam.course or 'All courses' }}<br>{{ exam.admission_session or 'All sessions' }}</td>
-    <td>{{ exam.start_time|localdt }}<br>to {{ exam.end_time|localdt }}</td>
-    <td>{{ exam.duration_minutes }} min</td>
-    <td>{{ exam.questions|length }}</td>
-    <td>{{ 'Published' if exam.is_published else 'Draft' }}</td>
-    <td><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a></td>
-  </tr>
+  <article class="exam-card">
+    <div class="exam-card-top">
+      <h3>{{ exam.title }}</h3>
+      {% if exam.is_published %}<span class="badge badge-success">Published</span>{% else %}<span class="badge">Draft</span>{% endif %}
+    </div>
+    <dl class="meta">
+      <div><dt>For</dt><dd>{{ exam.course or 'All courses' }}, {{ exam.admission_session or 'All sessions' }}</dd></div>
+      <div><dt>Duration</dt><dd>{{ exam.duration_minutes }} min</dd></div>
+      <div><dt>Opens</dt><dd>{{ exam.start_time|localdt }}</dd></div>
+      <div><dt>Closes</dt><dd>{{ exam.end_time|localdt }}</dd></div>
+      <div><dt>Questions</dt><dd>{{ exam.questions|length }}</dd></div>
+      <div><dt>Attempts</dt><dd>{{ exam.attempts|length }}</dd></div>
+    </dl>
+    <div class="exam-card-actions">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a>
+      <a class="btn btn-sm" href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">Results</a>
+    </div>
+  </article>
   {% endfor %}
-</table>
+</div>
 {% else %}
-<p>No exams yet. Create your first one.</p>
+<div class="empty">
+  <p>You have not created an exam yet.</p>
+  <a class="btn btn-primary" href="{{ url_for('teacher.exam_new') }}">+ Create your first exam</a>
+</div>
 {% endif %}
 {% endblock %}

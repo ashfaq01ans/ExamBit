@@ -18,6 +18,10 @@
   <p class="alert">Correct answers will be shown after the exam window closes on {{ exam.end_time|localdt }} (IST).</p>
 {% endif %}
 
+{% if not show_answers %}
+  <p class="muted">Your teacher has not turned on correct answers for this exam.</p>
+{% endif %}
+
 {% for row in rows %}
 <article class="card answer-card is-{{ row.status }}">
   <div class="answer-head">

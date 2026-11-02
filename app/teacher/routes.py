@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
+from sqlalchemy.orm import selectinload
 
 from app import db
 from app.decorators import role_required
@@ -75,6 +76,8 @@ def validate_exam(values):
     end = parse_local(values["end_time"])
     if start is None or end is None:
         errors.append("Enter a valid start and end time.")
+    elif end <= datetime.now(timezone.utc):
+        errors.append("The closing time must be in the future.")
     elif end <= start:
         errors.append("End time must be after start time.")
     elif duration and (end - start) < timedelta(minutes=duration):
@@ -114,7 +117,10 @@ def locked_redirect(exam):
 @role_required("teacher")
 def dashboard():
     exams = db.session.execute(
-        db.select(Exam).filter_by(teacher_id=current_user.id).order_by(Exam.created_at.desc())
+        db.select(Exam)
+        .filter_by(teacher_id=current_user.id)
+        .order_by(Exam.created_at.desc())
+        .options(selectinload(Exam.questions), selectinload(Exam.attempts))
     ).scalars().all()
     return render_template("teacher/dashboard.html", exams=exams)
 
@@ -221,6 +227,85 @@ def exam_unpublish(exam_id):
 
 # ---------- questions ----------
 
+def parse_question_form(qtype, form):
+    """Read and check the question form. Returns (text, marks, options, errors).
+    options is a list of (text, is_correct)."""
+    errors = []
+    text = form.get("text", "").strip()
+    if not text:
+        errors.append("Question text is required.")
+
+    try:
+        marks = int(form.get("marks", "").strip())
+        if not 1 <= marks <= 100:
+            raise ValueError
+    except ValueError:
+        marks = None
+        errors.append("Marks must be a whole number from 1 to 100.")
+
+    options = []
+    if qtype in ("single", "multiple"):
+        correct_values = set(form.getlist("correct"))
+        for i in range(1, 5):
+            option_text = form.get(f"option_{i}", "").strip()
+            if option_text:
+                options.append((option_text, str(i) in correct_values))
+        correct_count = sum(1 for _, is_correct in options if is_correct)
+        if len(options) < 2:
+            errors.append("Enter at least two options.")
+        if qtype == "single" and correct_count != 1:
+            errors.append("Choose exactly one correct option.")
+        if qtype == "multiple" and correct_count < 1:
+            errors.append("Choose at least one correct option.")
+    elif qtype == "truefalse":
+        answer = form.get("tf_answer")
+        if answer not in ("true", "false"):
+            errors.append("Choose the correct answer: True or False.")
+        else:
+            options = [("True", answer == "true"), ("False", answer == "false")]
+    return text, marks, options, errors
+
+
+class Prefill:
+    """Looks like request.form, so one template can show a saved question."""
+
+    def __init__(self, data):
+        self.data = data
+
+    def get(self, key, default=""):
+        return self.data.get(key, default)
+
+    def getlist(self, key):
+        return self.data.get(key, [])
+
+
+def prefill_from_question(question, qtype):
+    """Fill the form from a saved question. Options carry over only between
+    single choice and multiple correct. Text and marks always carry over."""
+    data = {"text": question.text, "marks": str(question.marks)}
+    options = sorted(question.options, key=lambda o: o.id)
+    if qtype in ("single", "multiple") and question.qtype in ("single", "multiple"):
+        correct = []
+        for i, option in enumerate(options[:4], start=1):
+            data[f"option_{i}"] = option.text
+            if option.is_correct:
+                correct.append(str(i))
+        data["correct"] = correct
+    elif qtype == "truefalse" and question.qtype == "truefalse":
+        for option in options:
+            if option.is_correct:
+                data["tf_answer"] = option.text.lower()
+    return data
+
+
+def render_question_form(exam, qtype, form, question=None):
+    return render_template(
+        "teacher/question_form.html",
+        exam=exam, qtype=qtype, type_label=QUESTION_TYPES[qtype], types=QUESTION_TYPES,
+        form=form, question=question,
+    )
+
+
 @bp.route("/exams/<int:exam_id>/questions/new", methods=["GET", "POST"])
 @role_required("teacher")
 def question_new(exam_id):
@@ -234,47 +319,11 @@ def question_new(exam_id):
         return render_template("teacher/question_type.html", exam=exam, types=QUESTION_TYPES)
 
     if request.method == "POST":
-        text = request.form.get("text", "").strip()
-        errors = []
-        if not text:
-            errors.append("Question text is required.")
-
-        try:
-            marks = int(request.form.get("marks", "").strip())
-            if not 1 <= marks <= 100:
-                raise ValueError
-        except ValueError:
-            marks = None
-            errors.append("Marks must be a whole number from 1 to 100.")
-
-        options = []  # list of (text, is_correct)
-        if qtype in ("single", "multiple"):
-            correct_values = set(request.form.getlist("correct"))
-            for i in range(1, 5):
-                option_text = request.form.get(f"option_{i}", "").strip()
-                if option_text:
-                    options.append((option_text, str(i) in correct_values))
-            correct_count = sum(1 for _, is_correct in options if is_correct)
-            if len(options) < 2:
-                errors.append("Enter at least two options.")
-            if qtype == "single" and correct_count != 1:
-                errors.append("Choose exactly one correct option.")
-            if qtype == "multiple" and correct_count < 1:
-                errors.append("Choose at least one correct option.")
-        elif qtype == "truefalse":
-            answer = request.form.get("tf_answer")
-            if answer not in ("true", "false"):
-                errors.append("Choose the correct answer: True or False.")
-            else:
-                options = [("True", answer == "true"), ("False", answer == "false")]
-
+        text, marks, options, errors = parse_question_form(qtype, request.form)
         if errors:
             for message in errors:
                 flash(message, "error")
-            return render_template(
-                "teacher/question_form.html",
-                exam=exam, qtype=qtype, type_label=QUESTION_TYPES[qtype], form=request.form,
-            )
+            return render_question_form(exam, qtype, request.form)
 
         question = Question(exam_id=exam.id, text=text, qtype=qtype, marks=marks)
         question.options = [Option(text=t, is_correct=c) for t, c in options]
@@ -283,10 +332,41 @@ def question_new(exam_id):
         flash("Question added.", "success")
         return redirect(url_for("teacher.exam_detail", exam_id=exam.id))
 
-    return render_template(
-        "teacher/question_form.html",
-        exam=exam, qtype=qtype, type_label=QUESTION_TYPES[qtype], form=request.form,
-    )
+    return render_question_form(exam, qtype, request.form)
+
+
+@bp.route("/exams/<int:exam_id>/questions/<int:question_id>/edit", methods=["GET", "POST"])
+@role_required("teacher")
+def question_edit(exam_id, question_id):
+    exam = get_exam(exam_id)
+    blocked = locked_redirect(exam)
+    if blocked:
+        return blocked
+
+    question = db.session.get(Question, question_id)
+    if question is None or question.exam_id != exam.id:
+        abort(404)
+
+    qtype = request.values.get("type", question.qtype)
+    if qtype not in QUESTION_TYPES:
+        abort(404)
+
+    if request.method == "POST":
+        text, marks, options, errors = parse_question_form(qtype, request.form)
+        if errors:
+            for message in errors:
+                flash(message, "error")
+            return render_question_form(exam, qtype, request.form, question)
+
+        question.text = text
+        question.marks = marks
+        question.qtype = qtype
+        question.options = [Option(text=t, is_correct=c) for t, c in options]  # old ones are removed
+        db.session.commit()
+        flash("Question updated.", "success")
+        return redirect(url_for("teacher.exam_detail", exam_id=exam.id))
+
+    return render_question_form(exam, qtype, Prefill(prefill_from_question(question, qtype)), question)
 
 
 @bp.route("/exams/<int:exam_id>/questions/<int:question_id>/delete", methods=["POST"])

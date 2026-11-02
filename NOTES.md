@@ -28,3 +28,20 @@ flask --app run reset-data --keep-users
 flask --app run reset-data
 
 grading, class filter, and deployment prep done. Left: deploy, styling, toasts, score chart.
+
+# ExamBit notes
+Stack: Python 3.13, Flask, PostgreSQL, SQLAlchemy, Flask-Login, Flask-Migrate
+DB URL: postgresql+psycopg2:// (config.py converts it automatically)
+Project folder: C:\dev\exambit (never OneDrive)
+Live: Render (app) + Neon (database). Push to GitHub, Render rebuilds.
+After a model change: db migrate, db upgrade locally, then db upgrade on Neon BEFORE git push
+  ($env:DATABASE_URL = "neon string"; flask --app run db upgrade; Remove-Item Env:DATABASE_URL)
+
+DONE: auth + roles, course/session filter, exams + questions (create, edit, delete, publish),
+  student exam screen (autosave, shuffle, review, panel), proctoring (camera, screen, fullscreen,
+  tab, right-click, snapshots, 10-violation auto-submit), grading (auto + manual), results,
+  CSV, answers review, snapshot delete, reset-data command, styling, deployment
+
+LEFT: 1 CSRF protection  2 score chart on results  3 final security + Chrome/Edge test
+  4 clean live DB + README  5 demo video  6 project report  7 viva prep
+Optional: login page "Create an account" as an outlined button

@@ -6,6 +6,7 @@ from flask import (
 )
 from flask_login import current_user
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
 from app import db
@@ -198,7 +199,10 @@ def build_payload(attempt):
 def dashboard():
     now = now_utc()
     exams = db.session.execute(
-        db.select(Exam).filter_by(is_published=True).order_by(Exam.start_time.desc())
+        db.select(Exam)
+        .filter_by(is_published=True)
+        .order_by(Exam.start_time.desc())
+        .options(selectinload(Exam.questions))
     ).scalars().all()
     exams = [exam for exam in exams if is_eligible(exam)]
     attempts = {a.exam_id: a for a in current_user.attempts}

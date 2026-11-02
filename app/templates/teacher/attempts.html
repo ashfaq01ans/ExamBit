@@ -1,42 +1,48 @@
 {% extends "base.html" %}
-{% block title %}Attempts - {{ exam.title }}{% endblock %}
+{% block title %}Results - {{ exam.title }}{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">&larr; Back to exam</a></p>
-<h1>Results: {{ exam.title }}</h1>
-<p>
-  Total marks: {{ '%g'|format(total) }}
-  {% if rows %} | <a href="{{ url_for('teacher.exam_results_csv', exam_id=exam.id) }}">Download CSV</a>{% endif %}
-</p>
+<p><a class="btn btn-ghost btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">&larr; Back to exam</a></p>
+
+<div class="page-head">
+  <div>
+    <h1>Results</h1>
+    <p class="muted">{{ exam.title }} &middot; Total marks {{ '%g'|format(total) }}</p>
+  </div>
+  {% if rows %}
+    <a class="btn" href="{{ url_for('teacher.exam_results_csv', exam_id=exam.id) }}">Download CSV</a>
+  {% endif %}
+</div>
 
 {% if rows %}
-<table border="1" cellpadding="6">
+<table>
   <tr>
     <th>Student</th><th>Course / session</th><th>Started (IST)</th><th>Status</th>
-    <th>Marks</th><th>Violations</th><th>Integrity score</th><th></th>
+    <th>Marks</th><th>Violations</th><th>Integrity</th><th></th>
   </tr>
   {% for row in rows %}
   {% set attempt = row.attempt %}
+  {% set integrity = attempt.integrity_score %}
   <tr>
-    <td>{{ attempt.student.name }}<br>{{ attempt.student.email }}</td>
-    <td>{{ attempt.student.course or '\u2013' }}<br>{{ attempt.student.admission_session or '\u2013' }}</td>
+    <td class="student-cell">{{ attempt.student.name }}<small class="muted">{{ attempt.student.email }}</small></td>
+    <td>{{ attempt.student.course or '–' }}<br><small class="muted">{{ attempt.student.admission_session or '–' }}</small></td>
     <td>{{ attempt.started_at|localdt }}</td>
     <td>
-      {% if attempt.status == 'in_progress' %}In progress
-      {% elif attempt.status == 'submitted' %}Submitted
-      {% else %}Auto-submitted{% endif %}
+      {% if attempt.status == 'in_progress' %}<span class="badge badge-warning">In progress</span>
+      {% elif attempt.status == 'submitted' %}<span class="badge badge-success">Submitted</span>
+      {% else %}<span class="badge badge-warning">Auto-submitted</span>{% endif %}
     </td>
     <td>
-      {% if attempt.status == 'in_progress' %}&ndash;
-      {% elif row.pending %}{{ '%g'|format(row.earned) }} so far<br><strong>Needs grading ({{ row.pending }})</strong>
-      {% else %}{{ '%g'|format(row.earned) }} / {{ '%g'|format(total) }}{% endif %}
+      {% if attempt.status == 'in_progress' %}–
+      {% elif row.pending %}{{ '%g'|format(row.earned) }} so far<br><span class="badge badge-warning">Needs grading ({{ row.pending }})</span>
+      {% else %}<strong>{{ '%g'|format(row.earned) }}</strong> / {{ '%g'|format(total) }}{% endif %}
     </td>
     <td>{{ attempt.violations|length }}</td>
-    <td>{{ attempt.integrity_score }}</td>
-    <td><a href="{{ url_for('teacher.attempt_detail', attempt_id=attempt.id) }}">Review</a></td>
+    <td><span class="badge {{ 'badge-success' if integrity >= 80 else 'badge-warning' if integrity >= 50 else 'badge-danger' }}">{{ integrity }}</span></td>
+    <td><a class="btn btn-sm btn-primary" href="{{ url_for('teacher.attempt_detail', attempt_id=attempt.id) }}">Review</a></td>
   </tr>
   {% endfor %}
 </table>
 {% else %}
-<p>No student has attempted this exam yet.</p>
+<p class="empty">No student has attempted this exam yet.</p>
 {% endif %}
 {% endblock %}

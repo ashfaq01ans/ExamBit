@@ -215,7 +215,7 @@
         type: "button", class: "btn", text: "\u2190 Previous", disabled: current === 0,
         onclick: function () { goTo(current - 1); }
       }),
-      el("button", { type: "button", class: "btn btn-ghost", text: "Clear answer", onclick: function () { clearAnswer(q); } }),
+      el("button", { type: "button", class: "btn", text: "Clear answer", onclick: function () { clearAnswer(q); } }),
       el("span", { class: "spacer" }),
       el("button", {
         type: "button", class: "btn btn-primary", text: isLast ? "Review \u2192" : "Next \u2192",

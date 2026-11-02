@@ -1,39 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Add question - ExamBit{% endblock %}
+{% block title %}{{ 'Edit' if question else 'Add' }} question - ExamBit{% endblock %}
 {% block content %}
-<h1>Add question: {{ type_label }}</h1>
-<p>Exam: {{ exam.title }}</p>
-<p><a class="btn btn-ghost btn-sm" href="{{ url_for('teacher.question_new', exam_id=exam.id) }}">&larr; Change question type</a></p>
-<form method="post">
-  <input type="hidden" name="type" value="{{ qtype }}">
-  <p>
-    <label for="text">Question</label><br>
-    <textarea id="text" name="text" rows="3" cols="60" required>{{ form.get('text', '') }}</textarea>
-  </p>
-  <p>
-    <label for="marks">Marks</label><br>
-    <input type="number" id="marks" name="marks" min="1" max="100" value="{{ form.get('marks', '1') }}" required>
-  </p>
+<p><a class="btn btn-ghost btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">&larr; Back to exam</a></p>
 
-  {% if qtype in ('single', 'multiple') %}
-    <p>Fill at least two options and mark the correct {{ 'one' if qtype == 'single' else 'ones' }}:</p>
-    {% for i in range(1, 5) %}
-      <p>
-        <input type="{{ 'radio' if qtype == 'single' else 'checkbox' }}" name="correct" value="{{ i }}"
-               {% if i|string in form.getlist('correct') %}checked{% endif %}>
-        <input type="text" name="option_{{ i }}" value="{{ form.get('option_' ~ i, '') }}" size="50" placeholder="Option {{ i }}">
-      </p>
+<div class="card form-card">
+  <h1>{{ 'Edit question' if question else 'Add question' }}</h1>
+  <p class="muted">Exam: {{ exam.title }}</p>
+
+  <p class="field-label">Question type</p>
+  <div class="chips">
+    {% for key, label in types.items() %}
+      {% if question %}
+        <a class="chip {{ 'is-active' if key == qtype else '' }}" href="{{ url_for('teacher.question_edit', exam_id=exam.id, question_id=question.id, type=key) }}">{{ label }}</a>
+      {% else %}
+        <a class="chip {{ 'is-active' if key == qtype else '' }}" href="{{ url_for('teacher.question_new', exam_id=exam.id, type=key) }}">{{ label }}</a>
+      {% endif %}
     {% endfor %}
-  {% elif qtype == 'truefalse' %}
-    <p>Correct answer:
-      <label><input type="radio" name="tf_answer" value="true" {% if form.get('tf_answer') == 'true' %}checked{% endif %}> True</label>
-      <label><input type="radio" name="tf_answer" value="false" {% if form.get('tf_answer') == 'false' %}checked{% endif %}> False</label>
-    </p>
-  {% else %}
-    <p>Short-answer questions have no options. You grade them yourself after the exam.</p>
-  {% endif %}
+  </div>
+  <p><small>Choosing another type reloads the form. Anything you typed and did not save is lost.</small></p>
 
-  <p><button type="submit" class="btn btn-primary">Save question</button></p>
-</form>
-<p><a href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Cancel</a></p>
+  <form method="post">
+    <input type="hidden" name="type" value="{{ qtype }}">
+    <p>
+      <label for="text">Question</label>
+      <textarea id="text" name="text" rows="3" required>{{ form.get('text', '') }}</textarea>
+    </p>
+    <p>
+      <label for="marks">Marks</label>
+      <input type="number" id="marks" name="marks" min="1" max="100" value="{{ form.get('marks', '1') }}" required>
+    </p>
+
+    {% if qtype in ('single', 'multiple') %}
+      <p class="field-label">Options. Fill at least two and tick the correct {{ 'one' if qtype == 'single' else 'ones' }}.</p>
+      {% for i in range(1, 5) %}
+        <div class="option-row">
+          <input type="{{ 'radio' if qtype == 'single' else 'checkbox' }}" name="correct" value="{{ i }}"
+                 aria-label="Option {{ i }} is correct" {% if i|string in form.getlist('correct') %}checked{% endif %}>
+          <input type="text" name="option_{{ i }}" value="{{ form.get('option_' ~ i, '') }}" placeholder="Option {{ i }}">
+        </div>
+      {% endfor %}
+    {% elif qtype == 'truefalse' %}
+      <p class="field-label">Correct answer</p>
+      <p>
+        <label><input type="radio" name="tf_answer" value="true" {% if form.get('tf_answer') == 'true' %}checked{% endif %}> True</label>
+        &nbsp;&nbsp;
+        <label><input type="radio" name="tf_answer" value="false" {% if form.get('tf_answer') == 'false' %}checked{% endif %}> False</label>
+      </p>
+    {% else %}
+      <p class="muted">Short-answer questions have no options. You grade them yourself after the exam.</p>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">{{ 'Save changes' if question else 'Save question' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Cancel</a>
+    </div>
+  </form>
+</div>
 {% endblock %}

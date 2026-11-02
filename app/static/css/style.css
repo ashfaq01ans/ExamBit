@@ -36,7 +36,8 @@ body {
 :focus-visible { outline: 3px solid #93b4ff; outline-offset: 2px; }
 
 .container { max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; }
-main { padding-top: 1.75rem; padding-bottom: 3rem; }
+/* .container resets vertical padding, so the page body needs a stronger rule */
+main.container { padding-top: 1.75rem; padding-bottom: 4rem; }
 
 .skip-link {
   position: absolute; left: -999px; top: 0;
@@ -160,7 +161,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
 .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-danger:hover { background: #912018; border-color: #912018; color: #fff; }
-.btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text); }
 .btn-ghost:hover { background: #eef2f7; border-color: transparent; color: var(--text); }
 .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.875rem; }
 .btn-block { display: block; width: 100%; }
@@ -366,3 +367,54 @@ tr:last-child td { border-bottom: 0; }
   .rules-grid { grid-template-columns: 1fr; }
   .page-head { flex-direction: column; }
 }
+
+/* ======================================================================
+   Teacher pages
+   ====================================================================== */
+.action-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 1rem 0 1.5rem; }
+.action-bar form { margin: 0; }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin: 1.75rem 0 0.75rem; }
+.section-head h2 { margin: 0; }
+.btn-outline-danger { color: var(--danger); border-color: #f1b5b0; background: #fff; }
+.btn-outline-danger:hover { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+.form-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+
+.form-card { max-width: 720px; }
+.form-card input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.form-card select, .form-card textarea { max-width: none; }
+.form-card input[type="number"]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { max-width: 160px; }
+.field-label { font-weight: 600; font-size: 0.9rem; margin: 1rem 0 0.4rem; }
+
+/* option rows: the tick box sits on the same line as the option text */
+.option-row { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0; }
+.option-row input[type="checkbox"], .option-row input[type="radio"] { flex: none; width: 1.15rem; height: 1.15rem; margin: 0; }
+.option-row input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { flex: 1; width: auto; max-width: none; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 1.25rem; }
+.chip {
+  padding: 0.4rem 0.9rem; font-size: 0.9rem; font-weight: 600; color: var(--text);
+  text-decoration: none; background: #fff; border: 1.5px solid var(--border); border-radius: 999px;
+}
+.chip:hover { border-color: var(--primary); color: var(--text); }
+.chip.is-active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-hover); }
+
+.q-item { margin-bottom: 0.9rem; }
+.q-item .q-text { font-size: 1.05rem; margin: 0.25rem 0 0.8rem; white-space: pre-wrap; }
+.opt-list { list-style: none; padding: 0; margin: 0 0 0.9rem; }
+.opt-list li {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+  padding: 0.45rem 0.8rem; margin: 0.35rem 0; background: #fff;
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.opt-list li.is-correct { background: var(--success-soft); border-color: #b4dcc0; }
+.q-actions { display: flex; gap: 0.5rem; }
+.q-actions form { margin: 0; }
+
+.marks-input { display: flex; align-items: center; gap: 0.6rem; }
+.student-cell small { display: block; }
+.snap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+.snap-grid figure { margin: 0; }
+.snap-grid img { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+.snap-grid figcaption { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+.section-card { margin-top: 1.25rem; }
+.stat small { display: block; color: var(--muted); }
