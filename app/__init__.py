@@ -14,6 +14,7 @@ login_manager.login_view = "auth.login"
 login_manager.login_message = "Please log in to continue."
 
 ERROR_TEXT = {
+    400: ("Request could not be verified", "Your session may have expired. Go back, reload the page and try again."),
     403: ("Access denied", "You do not have permission to open this page."),
     404: ("Page not found", "This page does not exist, or you cannot open it."),
     500: ("Something went wrong", "An unexpected error happened. Please try again."),
@@ -56,6 +57,10 @@ def create_app():
         return url_for("static", filename=filename, v=version)
 
     app.jinja_env.globals["static_v"] = static_v
+
+    from app.security import init_security
+
+    init_security(app)  # CSRF tokens and safe response headers
 
     from app.auth.routes import bp as auth_bp
     from app.teacher.routes import bp as teacher_bp

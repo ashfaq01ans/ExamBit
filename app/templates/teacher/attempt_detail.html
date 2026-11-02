@@ -50,6 +50,7 @@
   <p class="empty">The student is still taking the exam.</p>
 {% else %}
 <form method="post" action="{{ url_for('teacher.attempt_grade', attempt_id=attempt.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for row in rows %}
   {% if row.question.qtype == 'short' %}
     {% set cls = 'is-pending' if (row.text and not row.marks_value) else '' %}
@@ -111,6 +112,7 @@
     {% if snapshots and attempt.status != 'in_progress' %}
       <form method="post" action="{{ url_for('teacher.snapshots_delete', attempt_id=attempt.id) }}"
             data-confirm="Delete all snapshots of this attempt? This cannot be undone." data-confirm-label="Delete snapshots">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-sm btn-outline-danger">Delete snapshots</button>
       </form>
     {% endif %}

@@ -20,6 +20,7 @@
   <p><small>Choosing another type reloads the form. Anything you typed and did not save is lost.</small></p>
 
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="type" value="{{ qtype }}">
     <p>
       <label for="text">Question</label>

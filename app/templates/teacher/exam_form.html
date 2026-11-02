@@ -8,6 +8,7 @@
   <h1>{{ 'Edit exam' if exam else 'Create exam' }}</h1>
   <p class="muted">Times are in India Standard Time (IST).</p>
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <p>
       <label for="title">Title</label>
       <input type="text" id="title" name="title" value="{{ values.title }}" required>

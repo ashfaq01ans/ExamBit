@@ -89,5 +89,27 @@
     confirmBox(message, form.dataset.confirmLabel || "Confirm", function () { form.submit(); });
   });
 
+  // ---------- CSRF token for background requests ----------
+  // Every POST must carry the token from the page's <meta name="csrf-token">.
+  // Forms include it as a hidden field. This adds it to fetch() calls.
+  function csrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute("content") : "";
+  }
+
+  if (window.fetch) {
+    var plainFetch = window.fetch.bind(window);
+    window.fetch = function (resource, options) {
+      options = Object.assign({}, options);
+      var method = (options.method || "GET").toUpperCase();
+      if (method !== "GET" && method !== "HEAD") {
+        var headers = new Headers(options.headers || {});
+        if (!headers.has("X-CSRFToken")) headers.set("X-CSRFToken", csrfToken());
+        options.headers = headers;
+      }
+      return plainFetch(resource, options);
+    };
+  }
+
   window.ExamBitUI = { toast: toast, confirm: confirmBox };
 })();

@@ -7,6 +7,7 @@
 <h1>Create your account</h1>
 <p class="muted">Students pick their course and admission session.</p>
 <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <p>
     <label for="name">Name</label><br>
     <input type="text" id="name" name="name" value="{{ name }}" required>
