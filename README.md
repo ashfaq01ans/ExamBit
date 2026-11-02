@@ -72,3 +72,4 @@ Camera and screen sharing work on `localhost` and on HTTPS sites. Use Chrome or 
 
 A browser can detect and record these actions. It cannot stop them. Proctoring here
 deters misuse and leaves evidence for the teacher. It does not make cheating impossible.
+
