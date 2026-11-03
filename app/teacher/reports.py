@@ -17,6 +17,24 @@ def fmt(value):
     return format(value, "g")
 
 
+SNAPSHOT_GAP_SECONDS = 150  # snapshots come every 30 seconds, so this is five missed ones
+
+
+def find_snapshot_gaps(started_at, ended_at, taken_times):
+    """Stretches with no webcam snapshot for longer than SNAPSHOT_GAP_SECONDS.
+    A refresh, a blocked camera or a throttled background tab can cause one, and so
+    can someone blocking the page's background requests, so the teacher decides."""
+    if not taken_times or ended_at is None:
+        return []  # nothing stored (for example deleted) or the attempt is still running
+    points = [started_at] + sorted(taken_times) + [ended_at]
+    gaps = []
+    for before, after in zip(points, points[1:]):
+        seconds = (after - before).total_seconds()
+        if seconds > SNAPSHOT_GAP_SECONDS:
+            gaps.append({"start": before, "end": after, "minutes": round(seconds / 60, 1)})
+    return gaps
+
+
 def csv_safe(value):
     """Stop spreadsheet programs from running text that starts like a formula."""
     text = "" if value is None else str(value)
@@ -124,11 +142,14 @@ def render_attempt(attempt, form=None):
         .where(Snapshot.attempt_id == attempt.id)
         .order_by(Snapshot.taken_at)
     ).all()
+    snapshot_gaps = find_snapshot_gaps(
+        attempt.started_at, attempt.submitted_at, [s.taken_at for s in snapshots]
+    )
     earned, pending = compute_totals(attempt)
     return render_template(
         "teacher/attempt_detail.html",
         attempt=attempt, exam=exam, rows=rows, has_manual=has_manual,
-        violations=violations, snapshots=snapshots,
+        violations=violations, snapshots=snapshots, snapshot_gaps=snapshot_gaps,
         labels=VIOLATION_LABELS, max_violations=MAX_VIOLATIONS, types=QUESTION_TYPES,
         earned=earned, pending=pending, total=sum(q.marks for q in exam.questions),
     )

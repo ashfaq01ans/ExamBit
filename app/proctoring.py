@@ -10,4 +10,5 @@ VIOLATION_LABELS = {
     "screen_share_stopped": "Stopped screen sharing",
     "right_click": "Right-clicked",
     "camera_off": "Camera turned off",
+    "devtools_shortcut": "Tried to open developer tools or page source",
 }

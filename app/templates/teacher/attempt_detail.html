@@ -117,6 +117,17 @@
       </form>
     {% endif %}
   </div>
+  {% if snapshot_gaps %}
+    <div class="alert alert-warning">
+      <strong>Gaps in webcam snapshots.</strong> A refresh, a blocked camera or a hidden tab can cause these.
+      Check them against the violation list.
+      <ul>
+        {% for gap in snapshot_gaps %}
+          <li>No snapshot between {{ gap.start|localdt }} and {{ gap.end|localdt }} ({{ gap.minutes }} min)</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
   {% if snapshots %}
     <div class="snap-grid">
       {% for snapshot in snapshots %}

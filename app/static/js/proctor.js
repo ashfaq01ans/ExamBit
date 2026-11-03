@@ -15,6 +15,7 @@
   var state = null;            // exam payload, set after Begin
   var active = false;          // true while the exam is being monitored
   var lastFocusViolation = 0;
+  var lastKeyViolation = 0;
   var suppressFocusUntil = 0;  // ignore focus loss caused by our own dialogs
   var needs = { screen: false, camera: false, fullscreen: false };
   var queue = [];              // violations waiting to be sent
@@ -181,6 +182,27 @@
         warn("Copy, cut and paste are not allowed.");
       });
     });
+
+    // Developer-tools and page-source shortcuts. A browser cannot truly stop them: the
+    // browser menu still opens developer tools. Blocking and counting the shortcuts
+    // discourages it, and the server never sends correct answers to the page anyway.
+    document.addEventListener("keydown", function (event) {
+      if (!active) return;
+      var ctrl = event.ctrlKey || event.metaKey;
+      var inspect = event.code === "KeyI" || event.code === "KeyJ" || event.code === "KeyC";
+      var devtools = event.code === "F12" ||
+        (ctrl && event.shiftKey && inspect) ||           // Ctrl+Shift+I, J, C
+        (event.metaKey && event.altKey && inspect);      // Mac: Cmd+Option+I, J, C
+      var viewSource = ctrl && event.code === "KeyU";    // Ctrl+U
+      if (!devtools && !viewSource) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      var now = Date.now();
+      if (now - lastKeyViolation > 1500) {
+        lastKeyViolation = now;
+        report("devtools_shortcut");
+      }
+    }, true);
 
     if (state.violationCount > 0) {
       warn("You already have " + state.violationCount + " of " + state.maxViolations + " violations.");
