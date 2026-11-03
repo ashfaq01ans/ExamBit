@@ -1,6 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Teacher Dashboard - ExamBit{% endblock %}
 {% block content %}
+{% macro exam_card(item) %}
+{% set exam = item.exam %}
+<article class="exam-card">
+  <div class="exam-card-top">
+    <h3>{{ exam.title }}</h3>
+    <div class="badge-stack">
+      {% if item.state == 'draft' %}<span class="badge">Draft</span>
+      {% elif item.state == 'live' %}<span class="badge badge-success">Live</span>
+      {% elif item.state == 'upcoming' %}<span class="badge badge-primary">Upcoming</span>
+      {% else %}<span class="badge">Closed</span>{% endif %}
+      {% if item.pending %}<span class="badge badge-warning">{{ item.pending }} to grade</span>{% endif %}
+    </div>
+  </div>
+  <dl class="meta">
+    <div><dt>For</dt><dd>{{ exam.course or 'All courses' }}, {{ exam.admission_session or 'All sessions' }}</dd></div>
+    <div><dt>Duration</dt><dd>{{ exam.duration_minutes }} min</dd></div>
+    <div><dt>Opens</dt><dd>{{ exam.start_time|localdt }}</dd></div>
+    <div><dt>Closes</dt><dd>{{ exam.end_time|localdt }}</dd></div>
+    <div><dt>Questions</dt><dd>{{ exam.questions|length }}</dd></div>
+    <div><dt>Attempts</dt><dd>{{ exam.attempts|length }}</dd></div>
+  </dl>
+  <div class="exam-card-actions">
+    {% if item.pending %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">Grade now</a>
+      <a class="btn btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a>
+    {% elif item.state == 'draft' %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a>
+    {% else %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a>
+      <a class="btn btn-sm" href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">Results</a>
+    {% endif %}
+  </div>
+</article>
+{% endmacro %}
+
 <div class="page-head">
   <div>
     <h1>Hi, {{ current_user.name }}</h1>
@@ -9,33 +44,82 @@
   <a class="btn btn-primary" href="{{ url_for('teacher.exam_new') }}">+ Create exam</a>
 </div>
 
-{% if exams %}
-<div class="exam-grid">
-  {% for exam in exams %}
-  <article class="exam-card">
-    <div class="exam-card-top">
-      <h3>{{ exam.title }}</h3>
-      {% if exam.is_published %}<span class="badge badge-success">Published</span>{% else %}<span class="badge">Draft</span>{% endif %}
-    </div>
-    <dl class="meta">
-      <div><dt>For</dt><dd>{{ exam.course or 'All courses' }}, {{ exam.admission_session or 'All sessions' }}</dd></div>
-      <div><dt>Duration</dt><dd>{{ exam.duration_minutes }} min</dd></div>
-      <div><dt>Opens</dt><dd>{{ exam.start_time|localdt }}</dd></div>
-      <div><dt>Closes</dt><dd>{{ exam.end_time|localdt }}</dd></div>
-      <div><dt>Questions</dt><dd>{{ exam.questions|length }}</dd></div>
-      <div><dt>Attempts</dt><dd>{{ exam.attempts|length }}</dd></div>
-    </dl>
-    <div class="exam-card-actions">
-      <a class="btn btn-primary btn-sm" href="{{ url_for('teacher.exam_detail', exam_id=exam.id) }}">Manage</a>
-      <a class="btn btn-sm" href="{{ url_for('teacher.exam_attempts', exam_id=exam.id) }}">Results</a>
-    </div>
-  </article>
-  {% endfor %}
-</div>
-{% else %}
-<div class="empty">
-  <p>You have not created an exam yet.</p>
-  <a class="btn btn-primary" href="{{ url_for('teacher.exam_new') }}">+ Create your first exam</a>
-</div>
+{% if total_pending %}
+<p class="alert alert-warning">
+  <strong>{{ total_pending }} short answer{{ '' if total_pending == 1 else 's' }} waiting for grading</strong>
+  in {{ pending_exams }} exam{{ '' if pending_exams == 1 else 's' }}.
+  <a href="#needs-grading">Go to them</a>
+</p>
+{% endif %}
+
+{% if total_exams %}
+<form method="get" class="filter-bar" data-autosubmit>
+  <div>
+    <label for="course">Course</label>
+    <select id="course" name="course">
+      <option value="">All courses</option>
+      {% for c in course_options %}
+        <option value="{{ c }}" {% if selected_course == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+      {% if has_open %}
+        <option value="none" {% if selected_course == 'none' %}selected{% endif %}>Open to everyone</option>
+      {% endif %}
+    </select>
+  </div>
+  <div>
+    <label for="month">Month</label>
+    <select id="month" name="month">
+      <option value="">All months</option>
+      {% for key, label in month_options %}
+        <option value="{{ key }}" {% if selected_month == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <noscript><button type="submit" class="btn">Apply</button></noscript>
+  {% if selected_course or selected_month %}
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('teacher.dashboard') }}">Clear filters</a>
+  {% endif %}
+</form>
+{% endif %}
+
+{% set any_shown = groups.drafts or groups.grading or groups.active or groups.past %}
+
+{% if groups.drafts %}
+<section class="dash-section" id="drafts">
+  <h2>Drafts <span class="badge">{{ groups.drafts|length }}</span></h2>
+  <p class="muted">Students cannot see these yet.</p>
+  <div class="exam-grid">{% for item in groups.drafts %}{{ exam_card(item) }}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if groups.grading %}
+<section class="dash-section" id="needs-grading">
+  <h2>Needs grading <span class="badge badge-warning">{{ groups.grading|length }}</span></h2>
+  <p class="muted">Short answers are waiting for your marks.</p>
+  <div class="exam-grid">{% for item in groups.grading %}{{ exam_card(item) }}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if groups.active %}
+<section class="dash-section" id="live-upcoming">
+  <h2>Live and upcoming <span class="badge badge-success">{{ groups.active|length }}</span></h2>
+  <div class="exam-grid">{% for item in groups.active %}{{ exam_card(item) }}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if groups.past %}
+<section class="dash-section" id="past-exams">
+  <h2>Past exams <span class="badge">{{ groups.past|length }}</span></h2>
+  <div class="exam-grid">{% for item in groups.past %}{{ exam_card(item) }}{% endfor %}</div>
+</section>
+{% endif %}
+
+{% if total_exams and not any_shown %}
+  <p class="empty">No exams match these filters. <a href="{{ url_for('teacher.dashboard') }}">Clear filters</a></p>
+{% elif not total_exams %}
+  <div class="empty">
+    <p>You have not created an exam yet.</p>
+    <a class="btn btn-primary" href="{{ url_for('teacher.exam_new') }}">+ Create your first exam</a>
+  </div>
 {% endif %}
 {% endblock %}

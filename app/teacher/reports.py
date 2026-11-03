@@ -56,6 +56,32 @@ def status_label(attempt):
 
 # ---------- attempts list and results ----------
 
+SCORE_BANDS = [("0-19%", 0, 20), ("20-39%", 20, 40), ("40-59%", 40, 60), ("60-79%", 60, 80), ("80-100%", 80, 101)]
+
+
+def score_summary(rows, total):
+    """Average, highest, lowest and a count per score band, for finished and fully
+    graded attempts. Returns None when there is nothing to show yet."""
+    percents = [
+        100 * row["earned"] / total
+        for row in rows
+        if total and row["attempt"].status != "in_progress" and not row["pending"]
+    ]
+    if not percents:
+        return None
+    counts = [sum(1 for p in percents if low <= p < high) for _, low, high in SCORE_BANDS]
+    peak = max(counts) or 1
+    return {
+        "graded": len(percents),
+        "average": round(sum(percents) / len(percents), 1),
+        "highest": round(max(percents), 1),
+        "lowest": round(min(percents), 1),
+        "bands": [
+            {"label": label, "count": count, "width": round(100 * count / peak)}
+            for (label, _, _), count in zip(SCORE_BANDS, counts)
+        ],
+    }
+
 @bp.route("/exams/<int:exam_id>/attempts")
 @role_required("teacher")
 def exam_attempts(exam_id):
@@ -66,7 +92,9 @@ def exam_attempts(exam_id):
         ensure_graded(attempt)
         earned, pending = compute_totals(attempt)
         rows.append({"attempt": attempt, "earned": earned, "pending": pending})
-    return render_template("teacher/attempts.html", exam=exam, rows=rows, total=total)
+    return render_template(
+        "teacher/attempts.html", exam=exam, rows=rows, total=total, summary=score_summary(rows, total)
+    )
 
 
 @bp.route("/exams/<int:exam_id>/results.csv")

@@ -89,6 +89,11 @@
     confirmBox(message, form.dataset.confirmLabel || "Confirm", function () { form.submit(); });
   });
 
+  // ---------- filter forms: apply as soon as a choice changes ----------
+  document.querySelectorAll("form[data-autosubmit] select").forEach(function (select) {
+    select.addEventListener("change", function () { select.form.submit(); });
+  });
+
   // ---------- CSRF token for background requests ----------
   // Every POST must carry the token from the page's <meta name="csrf-token">.
   // Forms include it as a hidden field. This adds it to fetch() calls.

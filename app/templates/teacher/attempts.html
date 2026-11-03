@@ -13,6 +13,28 @@
   {% endif %}
 </div>
 
+{% if summary %}
+<div class="card section-card score-summary">
+  <h2>Score summary</h2>
+  <div class="stats">
+    <div class="stat"><span class="stat-label">Graded</span><span class="stat-value">{{ summary.graded }}</span></div>
+    <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ summary.average }}%</span></div>
+    <div class="stat"><span class="stat-label">Highest</span><span class="stat-value">{{ summary.highest }}%</span></div>
+    <div class="stat"><span class="stat-label">Lowest</span><span class="stat-value">{{ summary.lowest }}%</span></div>
+  </div>
+  <p class="field-label">Students in each score band</p>
+  <div class="bars" role="img" aria-label="Number of students in each score band">
+    {% for band in summary.bands %}
+      <div class="bar-row">
+        <span>{{ band.label }}</span>
+        <div class="bar-track"><div class="bar-fill" style="width: {{ band.width }}%"></div></div>
+        <span class="bar-count">{{ band.count }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% if rows %}
 <table>
   <tr>

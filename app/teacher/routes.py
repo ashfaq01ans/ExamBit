@@ -2,13 +2,14 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
+from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from app import db
 from app.decorators import role_required
 from app.classes import COURSES, session_options
-from app.models import Exam, Option, Question
-from app.timeutil import local_input, parse_local
+from app.models import Answer, Attempt, Exam, Option, Question
+from app.timeutil import local_input, parse_local, to_local
 
 bp = Blueprint("teacher", __name__, url_prefix="/teacher")
 
@@ -113,16 +114,92 @@ def locked_redirect(exam):
 
 # ---------- dashboard and exams ----------
 
+def build_dashboard(exams, pending, now, selected_course="", selected_month=""):
+    """Sort a teacher's exams into groups and apply the course and month filters.
+    exams: newest created first. pending: exam id -> short answers waiting for grading."""
+    items = []
+    months = {}
+    for exam in exams:
+        start = to_local(exam.start_time)
+        month_key = start.strftime("%Y-%m")
+        months[month_key] = start.strftime("%b %Y")
+        if not exam.is_published:
+            state = "draft"
+        elif exam.end_time <= now:
+            state = "closed"
+        elif exam.start_time > now:
+            state = "upcoming"
+        else:
+            state = "live"
+        items.append({"exam": exam, "state": state, "month": month_key, "pending": pending.get(exam.id, 0)})
+
+    def wanted(item):
+        exam = item["exam"]
+        if selected_course == "none":
+            course_ok = exam.course is None
+        else:
+            course_ok = not selected_course or exam.course == selected_course
+        return course_ok and (not selected_month or item["month"] == selected_month)
+
+    groups = {"drafts": [], "grading": [], "active": [], "past": []}
+    for item in filter(wanted, items):
+        if item["state"] == "draft":
+            groups["drafts"].append(item)
+        elif item["pending"]:
+            groups["grading"].append(item)
+        elif item["state"] in ("live", "upcoming"):
+            groups["active"].append(item)
+        else:
+            groups["past"].append(item)
+
+    groups["grading"].sort(key=lambda i: i["exam"].end_time, reverse=True)
+    groups["active"].sort(key=lambda i: i["exam"].start_time)          # soonest first
+    groups["past"].sort(key=lambda i: i["exam"].start_time, reverse=True)  # newest first
+
+    return {
+        "groups": groups,
+        "course_options": sorted({e.course for e in exams if e.course}),
+        "has_open": any(e.course is None for e in exams),
+        "month_options": sorted(months.items(), reverse=True),
+    }
+
+
 @bp.route("/")
 @role_required("teacher")
 def dashboard():
+    now = datetime.now(timezone.utc)
     exams = db.session.execute(
         db.select(Exam)
         .filter_by(teacher_id=current_user.id)
         .order_by(Exam.created_at.desc())
         .options(selectinload(Exam.questions), selectinload(Exam.attempts))
     ).scalars().all()
-    return render_template("teacher/dashboard.html", exams=exams)
+
+    # short answers waiting for this teacher, counted per exam in one query
+    pending_rows = db.session.execute(
+        db.select(Attempt.exam_id, func.count(Answer.id))
+        .select_from(Attempt)
+        .join(Answer, Answer.attempt_id == Attempt.id)
+        .join(Question, Question.id == Answer.question_id)
+        .where(
+            Attempt.exam_id.in_([exam.id for exam in exams]),
+            Attempt.status != "in_progress",
+            Question.qtype == "short",
+            Answer.marks_awarded.is_(None),
+            Answer.text_answer.is_not(None),
+        )
+        .group_by(Attempt.exam_id)
+    ).all()
+    pending = {exam_id: count for exam_id, count in pending_rows}
+
+    selected_course = request.args.get("course", "")
+    selected_month = request.args.get("month", "")
+    view = build_dashboard(exams, pending, now, selected_course, selected_month)
+    return render_template(
+        "teacher/dashboard.html",
+        total_exams=len(exams), total_pending=sum(pending.values()), pending_exams=len(pending),
+        selected_course=selected_course, selected_month=selected_month, **view,
+    )
 
 
 @bp.route("/exams/new", methods=["GET", "POST"])

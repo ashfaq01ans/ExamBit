@@ -420,3 +420,25 @@ tr:last-child td { border-bottom: 0; }
 .snap-grid figcaption { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
 .section-card { margin-top: 1.25rem; }
 .stat small { display: block; color: var(--muted); }
+
+/* ======================================================================
+   Teacher dashboard filters, grouping and score summary
+   ====================================================================== */
+.filter-bar {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem 1rem;
+  margin: 0 0 1.75rem; padding: 1rem 1.25rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.filter-bar label[for] { margin-bottom: 0.25rem; }
+.filter-bar select { width: auto; min-width: 190px; max-width: 280px; }
+.dash-section + .dash-section { border-top: 1px solid var(--border); padding-top: 1.75rem; }
+.dash-section h2 { display: flex; align-items: center; gap: 0.6rem; }
+.dash-section .muted { margin-top: -0.3rem; }
+.badge-stack { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end; }
+
+.bars { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
+.bar-row { display: grid; grid-template-columns: 70px 1fr 36px; align-items: center; gap: 0.75rem; font-size: 0.9rem; }
+.bar-track { height: 14px; background: #e3e9f3; border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--primary); border-radius: 999px; }
+.bar-count { text-align: right; font-weight: 600; }
+.score-summary .stats { margin-bottom: 0.5rem; }
