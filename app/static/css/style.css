@@ -442,3 +442,8 @@ tr:last-child td { border-bottom: 0; }
 .bar-fill { height: 100%; background: var(--primary); border-radius: 999px; }
 .bar-count { text-align: right; font-weight: 600; }
 .score-summary .stats { margin-bottom: 0.5rem; }
+
+/* banner with a button, and anchors that do not hide under the sticky header */
+.alert-action { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem 1rem; }
+.alert-action .btn { flex: none; }
+.dash-section { scroll-margin-top: 80px; }

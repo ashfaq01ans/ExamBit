@@ -158,7 +158,8 @@ def build_dashboard(exams, pending, now, selected_course="", selected_month=""):
 
     return {
         "groups": groups,
-        "course_options": sorted({e.course for e in exams if e.course}),
+        # every course the university offers, like the register page, plus any old one still on an exam
+        "course_options": list(COURSES) + sorted({e.course for e in exams if e.course and e.course not in COURSES}),
         "has_open": any(e.course is None for e in exams),
         "month_options": sorted(months.items(), reverse=True),
     }

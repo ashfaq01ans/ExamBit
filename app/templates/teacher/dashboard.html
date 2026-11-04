@@ -45,11 +45,13 @@
 </div>
 
 {% if total_pending %}
-<p class="alert alert-warning">
-  <strong>{{ total_pending }} short answer{{ '' if total_pending == 1 else 's' }} waiting for grading</strong>
-  in {{ pending_exams }} exam{{ '' if pending_exams == 1 else 's' }}.
-  <a href="#needs-grading">Go to them</a>
-</p>
+<div class="alert alert-warning alert-action">
+  <span>
+    <strong>{{ total_pending }} short answer{{ '' if total_pending == 1 else 's' }} waiting for grading</strong>
+    in {{ pending_exams }} exam{{ '' if pending_exams == 1 else 's' }}.
+  </span>
+  <a class="btn btn-sm" href="#needs-grading">Go to grading</a>
+</div>
 {% endif %}
 
 {% if total_exams %}
